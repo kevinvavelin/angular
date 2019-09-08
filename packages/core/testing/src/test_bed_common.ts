@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component, Directive, InjectionToken, NgModule, Pipe, PlatformRef, SchemaMetadata, Type} from '@angular/core';
+import {AbstractType, Component, Directive, InjectFlags, InjectionToken, NgModule, Pipe, PlatformRef, SchemaMetadata, Type} from '@angular/core';
 
 import {ComponentFixture} from './component_fixture';
 import {MetadataOverride} from './metadata_override';
@@ -15,25 +15,25 @@ import {TestBed} from './test_bed';
 /**
  * An abstract class for inserting the root test component element in a platform independent way.
  *
- * @experimental
+ * @publicApi
  */
 export class TestComponentRenderer {
   insertRootElement(rootElementId: string) {}
 }
 
 /**
- * @experimental
+ * @publicApi
  */
 export const ComponentFixtureAutoDetect =
     new InjectionToken<boolean[]>('ComponentFixtureAutoDetect');
 
 /**
- * @experimental
+ * @publicApi
  */
 export const ComponentFixtureNoNgZone = new InjectionToken<boolean[]>('ComponentFixtureNoNgZone');
 
 /**
- * @experimental
+ * @publicApi
  */
 export type TestModuleMetadata = {
   providers?: any[],
@@ -45,6 +45,8 @@ export type TestModuleMetadata = {
 
 /**
  * Static methods implemented by the `TestBedViewEngine` and `TestBedRender3`
+ *
+ * @publicApi
  */
 export interface TestBedStatic {
   new (...args: any[]): TestBed;
@@ -54,8 +56,6 @@ export interface TestBedStatic {
 
   /**
    * Reset the providers for the test injector.
-   *
-   * @experimental
    */
   resetTestEnvironment(): void;
 
@@ -114,22 +114,15 @@ export interface TestBedStatic {
     deps?: any[],
   }): TestBedStatic;
 
-  /**
-   * Overwrites all providers for the given token with the given provider definition.
-   *
-   * @deprecated as it makes all NgModules lazy. Introduced only for migrating off of it.
-   */
-  deprecatedOverrideProvider(token: any, provider: {
-    useFactory: Function,
-    deps: any[],
-  }): void;
-  deprecatedOverrideProvider(token: any, provider: {useValue: any;}): void;
-  deprecatedOverrideProvider(token: any, provider: {
-    useFactory?: Function,
-    useValue?: any,
-    deps?: any[],
-  }): TestBedStatic;
+  inject<T>(
+      token: Type<T>|InjectionToken<T>|AbstractType<T>, notFoundValue?: T, flags?: InjectFlags): T;
+  inject<T>(
+      token: Type<T>|InjectionToken<T>|AbstractType<T>, notFoundValue: null, flags?: InjectFlags): T
+      |null;
 
+  /** TODO(goodwine): Mark as deprecated from v9.0.0 use TestBed.inject */
+  get<T>(token: Type<T>|InjectionToken<T>, notFoundValue?: T, flags?: InjectFlags): any;
+  /** TODO(goodwine): Mark as deprecated from v9.0.0 use TestBed.inject */
   get(token: any, notFoundValue?: any): any;
 
   createComponent<T>(component: Type<T>): ComponentFixture<T>;

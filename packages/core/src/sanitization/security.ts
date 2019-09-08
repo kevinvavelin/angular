@@ -13,7 +13,7 @@
  *
  * See DomSanitizer for more details on security in Angular applications.
  *
- *
+ * @publicApi
  */
 export enum SecurityContext {
   NONE = 0,
@@ -22,13 +22,4 @@ export enum SecurityContext {
   SCRIPT = 3,
   URL = 4,
   RESOURCE_URL = 5,
-}
-
-/**
- * Sanitizer is used by the views to sanitize potentially dangerous values.
- *
- *
- */
-export abstract class Sanitizer {
-  abstract sanitize(context: SecurityContext, value: {}|string|null): string|null;
 }

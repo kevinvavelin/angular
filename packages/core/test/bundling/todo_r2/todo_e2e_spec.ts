@@ -6,9 +6,9 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import '@angular/compiler';
 import {ɵwhenRendered as whenRendered} from '@angular/core';
 import {withBody} from '@angular/private/testing';
-import * as fs from 'fs';
 import * as path from 'path';
 
 const UTF8 = {
@@ -27,7 +27,8 @@ describe('functional test for todo', () => {
            const toDoAppComponent = (window as any).toDoAppComponent;
            await whenRendered(toDoAppComponent);
 
-           const styleContent = findStyleTextForSelector('.todo-list\\\[_ngcontent-\\\w+\\\]');
+           const styleContent =
+               findStyleTextForSelector('.todo-list\\\[_ngcontent-[a-z]+-\\\w+\\\]');
            expect(styleContent).toMatch(/font-weight:\s*bold;/);
            expect(styleContent).toMatch(/color:\s*#d9d9d9;/);
          }));

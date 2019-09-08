@@ -9,9 +9,14 @@
 import {InjectionToken} from '../di/injection_token';
 import {Injector} from '../di/injector';
 import {ViewEncapsulation} from '../metadata/view';
+import {injectRenderer2 as render3InjectRenderer2} from '../render3/view_engine_compatibility';
+import {noop} from '../util/noop';
+
+
 
 /**
  * @deprecated Use `RendererType2` (and `Renderer2`) instead.
+ * @publicApi
  */
 export class RenderComponentType {
   constructor(
@@ -21,7 +26,7 @@ export class RenderComponentType {
 }
 
 /**
- * @deprecated Debug info is handeled internally in the view engine now.
+ * @deprecated Debug info is handled internally in the view engine now.
  */
 export abstract class RenderDebugInfo {
   abstract get injector(): Injector;
@@ -45,6 +50,7 @@ export interface DirectRenderer {
 
 /**
  * @deprecated Use the `Renderer2` instead.
+ * @publicApi
  */
 export abstract class Renderer {
   abstract selectRootElement(selectorOrNode: string|any, debugInfo?: RenderDebugInfo): any;
@@ -71,7 +77,7 @@ export abstract class Renderer {
 
   abstract setElementProperty(renderElement: any, propertyName: string, propertyValue: any): void;
 
-  abstract setElementAttribute(renderElement: any, attributeName: string, attributeValue: string):
+  abstract setElementAttribute(renderElement: any, attributeName: string, attributeValue?: string):
       void;
 
   /**
@@ -82,7 +88,7 @@ export abstract class Renderer {
 
   abstract setElementClass(renderElement: any, className: string, isAdd: boolean): void;
 
-  abstract setElementStyle(renderElement: any, styleName: string, styleValue: string): void;
+  abstract setElementStyle(renderElement: any, styleName: string, styleValue?: string): void;
 
   abstract invokeElementMethod(renderElement: any, methodName: string, args?: any[]): void;
 
@@ -108,6 +114,7 @@ export const Renderer2Interceptor = new InjectionToken<Renderer2[]>('Renderer2In
  * The default Renderer implementation is `DomRenderer`. Also available is `WebWorkerRenderer`.
  *
  * @deprecated Use `RendererFactory2` instead.
+ * @publicApi
  */
 export abstract class RootRenderer {
   abstract renderComponent(componentType: RenderComponentType): Renderer;
@@ -116,7 +123,7 @@ export abstract class RootRenderer {
 /**
  * Used by `RendererFactory2` to associate custom rendering data and styles
  * with a rendering implementation.
- *  @experimental
+ *  @publicApi
  */
 export interface RendererType2 {
   /**
@@ -149,7 +156,7 @@ export interface RendererType2 {
 /**
  * Creates and initializes a custom renderer that implements the `Renderer2` base class.
  *
- * @experimental
+ * @publicApi
  */
 export abstract class RendererFactory2 {
   /**
@@ -176,7 +183,7 @@ export abstract class RendererFactory2 {
 
 /**
  * Flags for renderer-specific style modifiers.
- * @experimental
+ * @publicApi
  */
 export enum RendererStyleFlags2 {
   /**
@@ -202,7 +209,7 @@ export enum RendererStyleFlags2 {
  * not statically known, use the `setProperty()` or
  * `setAttribute()` method.
  *
- * @experimental
+ * @publicApi
  */
 export abstract class Renderer2 {
   /**
@@ -260,8 +267,10 @@ export abstract class Renderer2 {
    * Implement this callback to remove a child node from the host element's DOM.
    * @param parent The parent node.
    * @param oldChild The child node to remove.
+   * @param isHostElement Optionally signal to the renderer whether this element is a host element
+   * or not
    */
-  abstract removeChild(parent: any, oldChild: any): void;
+  abstract removeChild(parent: any, oldChild: any, isHostElement?: boolean): void;
   /**
    * Implement this callback to prepare an element to be bootstrapped
    * as a root element, and return the element instance.
@@ -366,4 +375,15 @@ export abstract class Renderer2 {
   abstract listen(
       target: 'window'|'document'|'body'|any, eventName: string,
       callback: (event: any) => boolean | void): () => void;
+
+  /**
+   * @internal
+   * @nocollapse
+   */
+  static __NG_ELEMENT_ID__: () => Renderer2 = () => SWITCH_RENDERER2_FACTORY();
 }
+
+
+export const SWITCH_RENDERER2_FACTORY__POST_R3__ = render3InjectRenderer2;
+const SWITCH_RENDERER2_FACTORY__PRE_R3__ = noop;
+const SWITCH_RENDERER2_FACTORY: typeof render3InjectRenderer2 = SWITCH_RENDERER2_FACTORY__PRE_R3__;

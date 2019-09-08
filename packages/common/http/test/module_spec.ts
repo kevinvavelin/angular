@@ -6,19 +6,18 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {HttpHandler} from '@angular/common/http/src/backend';
+import {HttpClient} from '@angular/common/http/src/client';
+import {HTTP_INTERCEPTORS, HttpInterceptor} from '@angular/common/http/src/interceptor';
+import {HttpRequest} from '@angular/common/http/src/request';
+import {HttpEvent, HttpResponse} from '@angular/common/http/src/response';
+import {HttpTestingController} from '@angular/common/http/testing/src/api';
+import {HttpClientTestingModule} from '@angular/common/http/testing/src/module';
+import {TestRequest} from '@angular/common/http/testing/src/request';
 import {Injectable, Injector} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
-
-import {HttpHandler} from '../src/backend';
-import {HttpClient} from '../src/client';
-import {HTTP_INTERCEPTORS, HttpInterceptor} from '../src/interceptor';
-import {HttpRequest} from '../src/request';
-import {HttpEvent, HttpResponse} from '../src/response';
-import {HttpTestingController} from '../testing/src/api';
-import {HttpClientTestingModule} from '../testing/src/module';
-import {TestRequest} from '../testing/src/request';
 
 class TestInterceptor implements HttpInterceptor {
   constructor(private value: string) {}
@@ -68,7 +67,7 @@ class ReentrantInterceptor implements HttpInterceptor {
       });
     });
     it('initializes HttpClient properly', done => {
-      injector.get(HttpClient).get('/test', {responseType: 'text'}).subscribe(value => {
+      injector.get(HttpClient).get('/test', {responseType: 'text'}).subscribe((value: string) => {
         expect(value).toBe('ok!');
         done();
       });
@@ -77,7 +76,7 @@ class ReentrantInterceptor implements HttpInterceptor {
     it('intercepts outbound responses in the order in which interceptors were bound', done => {
       injector.get(HttpClient)
           .get('/test', {observe: 'response', responseType: 'text'})
-          .subscribe(value => done());
+          .subscribe(() => done());
       const req = injector.get(HttpTestingController).expectOne('/test') as TestRequest;
       expect(req.request.headers.get('Intercepted')).toEqual('A,B');
       req.flush('ok!');
@@ -85,7 +84,7 @@ class ReentrantInterceptor implements HttpInterceptor {
     it('intercepts inbound responses in the right (reverse binding) order', done => {
       injector.get(HttpClient)
           .get('/test', {observe: 'response', responseType: 'text'})
-          .subscribe(value => {
+          .subscribe((value: HttpResponse<string>) => {
             expect(value.headers.get('Intercepted')).toEqual('B,A');
             done();
           });

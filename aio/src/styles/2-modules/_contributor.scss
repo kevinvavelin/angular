@@ -22,7 +22,7 @@ aio-contributor-list {
   a {
     &.selected {
       background-color: $blue;
-      color: white;
+      color: $white;
     }
   }
 }
@@ -66,12 +66,13 @@ aio-contributor {
     justify-content: center;
     align-items: center;
     text-align: center;
-    opacity: 0;
+    /* There is no point in hiding this if we can't hover to show it. */
+    @media (hover) { opacity: 0; }
     border-radius: 50%;
 
-    [mat-button] {
+    .info-item {
       color: $white;
-      font-size: 14px;
+      @include font-size(14);
       font-weight: 500;
       margin: 8px;
       padding: 0;
@@ -84,8 +85,14 @@ aio-contributor {
         min-width: 20px;
         width: 20px;
 
-        .fa-2x {
-          font-size: 20px;
+        mat-icon {
+          height: 20px;
+          width: 20px;
+
+          &.link-icon {
+            margin-top: -7px;
+            transform: rotateZ(45deg);
+          }
         }
       }
     }
@@ -135,8 +142,8 @@ aio-contributor {
 
       p {
         margin: 8px 0;
-        font-size: 12px;
-        line-height: 14px;
+        @include font-size(12);
+        @include line-height(14);
         text-align: left;
       }
 
@@ -165,7 +172,7 @@ aio-contributor {
   }
 
   section {
-    font-size: 14px;
+    @include font-size(14);
     font-weight: 500;
     padding: 8px;
     margin: 0;
@@ -177,11 +184,11 @@ aio-contributor {
 
   p {
     cursor: pointer;
-    font-size: 14px;
-    line-height: 18px;
+    @include font-size(14);
+    @include line-height(18);
     margin: 8px 16px;
     text-overflow: ellipsis;
-    overflow: scroll;
+    overflow-y: auto;
     font-weight: 400;
   }
 }

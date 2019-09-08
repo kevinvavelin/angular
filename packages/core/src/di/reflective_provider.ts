@@ -6,13 +6,13 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {Type} from '../interface/type';
 import {reflector} from '../reflection/reflection';
-import {Type} from '../type';
 
 import {resolveForwardRef} from './forward_ref';
 import {InjectionToken} from './injection_token';
+import {ClassProvider, ExistingProvider, FactoryProvider, Provider, TypeProvider, ValueProvider} from './interface/provider';
 import {Inject, Optional, Self, SkipSelf} from './metadata';
-import {ClassProvider, ExistingProvider, FactoryProvider, Provider, TypeProvider, ValueProvider} from './provider';
 import {invalidProviderError, mixingMultiProvidersWithRegularProvidersError, noAnnotationError} from './reflective_errors';
 import {ReflectiveKey} from './reflective_key';
 
@@ -52,7 +52,7 @@ const _EMPTY_LIST: any[] = [];
  * expect(injector.get('message')).toEqual('Hello');
  * ```
  *
- * @experimental
+ * @publicApi
  */
 export interface ResolvedReflectiveProvider {
   /**
@@ -83,7 +83,7 @@ export class ResolvedReflectiveProvider_ implements ResolvedReflectiveProvider {
 
 /**
  * An internal resolved representation of a factory function created by resolving `Provider`.
- * @experimental
+ * @publicApi
  */
 export class ResolvedReflectiveFactory {
   constructor(
@@ -180,10 +180,11 @@ export function mergeResolvedReflectiveProviders(
   return normalizedProvidersMap;
 }
 
-function _normalizeProviders(providers: Provider[], res: Provider[]): Provider[] {
+function _normalizeProviders(
+    providers: Provider[], res: NormalizedProvider[]): NormalizedProvider[] {
   providers.forEach(b => {
     if (b instanceof Type) {
-      res.push({provide: b, useClass: b});
+      res.push({ provide: b, useClass: b } as NormalizedProvider);
 
     } else if (b && typeof b == 'object' && (b as any).provide !== undefined) {
       res.push(b as NormalizedProvider);

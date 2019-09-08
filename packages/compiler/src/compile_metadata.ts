@@ -164,6 +164,7 @@ export interface CompileQueryMetadata {
   first: boolean;
   propertyName: string;
   read: CompileTokenMetadata;
+  static?: boolean;
 }
 
 /**
@@ -189,6 +190,7 @@ export interface CompileTemplateSummary {
   ngContentSelectors: string[];
   encapsulation: ViewEncapsulation|null;
   styles: string[];
+  animations: any[]|null;
 }
 
 /**
@@ -244,7 +246,8 @@ export class CompileTemplateMetadata {
     return {
       ngContentSelectors: this.ngContentSelectors,
       encapsulation: this.encapsulation,
-      styles: this.styles
+      styles: this.styles,
+      animations: this.animations
     };
   }
 }

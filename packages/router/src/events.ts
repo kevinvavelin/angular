@@ -10,76 +10,76 @@ import {Route} from './config';
 import {ActivatedRouteSnapshot, RouterStateSnapshot} from './router_state';
 
 /**
- * @description
+ * Identifies the call or event that triggered a navigation.
  *
- * Identifies the trigger of the navigation.
+ * * 'imperative': Triggered by `router.navigateByUrl()` or `router.navigate()`.
+ * * 'popstate' : Triggered by a `popstate` event.
+ * * 'hashchange'-: Triggered by a `hashchange` event.
  *
- * * 'imperative'--triggered by `router.navigateByUrl` or `router.navigate`.
- * * 'popstate'--triggered by a popstate event
- * * 'hashchange'--triggered by a hashchange event
- *
- * @experimental
+ * @publicApi
  */
 export type NavigationTrigger = 'imperative' | 'popstate' | 'hashchange';
 
 /**
- * @description
+ * Base for events the router goes through, as opposed to events tied to a specific
+ * route. Fired one time for any given navigation.
  *
- * Base for events the Router goes through, as opposed to events tied to a specific
- * Route. `RouterEvent`s will only be fired one time for any given navigation.
+ * @usageNotes
  *
- * Example:
- *
- * ```
+ * ```ts
  * class MyService {
  *   constructor(public router: Router, logger: Logger) {
- *     router.events.filter(e => e instanceof RouterEvent).subscribe(e => {
+ *     router.events.pipe(
+ *       filter(e => e instanceof RouterEvent)
+ *     ).subscribe(e => {
  *       logger.log(e.id, e.url);
  *     });
  *   }
  * }
  * ```
  *
- * @experimental
+ * @see `Event`
+ * @publicApi
  */
 export class RouterEvent {
   constructor(
-      /** @docsNotRequired */
+      /** A unique ID that the router assigns to every router navigation. */
       public id: number,
-      /** @docsNotRequired */
+      /** The URL that is the destination for this navigation. */
       public url: string) {}
 }
 
 /**
- * @description
+ * An event triggered when a navigation starts.
  *
- * Represents an event triggered when a navigation starts.
- *
- *
+ * @publicApi
  */
 export class NavigationStart extends RouterEvent {
   /**
-   * Identifies the trigger of the navigation.
+   * Identifies the call or event that triggered the navigation.
+   * An `imperative` trigger is a call to `router.navigateByUrl()` or `router.navigate()`.
    *
-   * * 'imperative'--triggered by `router.navigateByUrl` or `router.navigate`.
-   * * 'popstate'--triggered by a popstate event
-   * * 'hashchange'--triggered by a hashchange event
    */
   navigationTrigger?: 'imperative'|'popstate'|'hashchange';
 
   /**
-   * This contains the navigation id that pushed the history record that the router navigates
-   * back to. This is not null only when the navigation is triggered by a popstate event.
+   * The navigation state that was previously supplied to the `pushState` call,
+   * when the navigation is triggered by a `popstate` event. Otherwise null.
    *
-   * The router assigns a navigationId to every router transition/navigation. Even when the user
-   * clicks on the back button in the browser, a new navigation id will be created. So from
-   * the perspective of the router, the router never "goes back". By using the `restoredState`
-   * and its navigationId, you can implement behavior that differentiates between creating new
-   * states
-   * and popstate events. In the latter case you can restore some remembered state (e.g., scroll
-   * position).
+   * The state object is defined by `NavigationExtras`, and contains any
+   * developer-defined state value, as well as a unique ID that
+   * the router assigns to every router transition/navigation.
+   *
+   * From the perspective of the router, the router never "goes back".
+   * When the user clicks on the back button in the browser,
+   * a new navigation ID is created.
+   *
+   * Use the ID in this previous-state object to differentiate between a newly created
+   * state and one returned to by a `popstate` event, so that you can restore some
+   * remembered state, such as scroll position.
+   *
    */
-  restoredState?: {navigationId: number}|null;
+  restoredState?: {[k: string]: any, navigationId: number}|null;
 
   constructor(
       /** @docsNotRequired */
@@ -89,7 +89,7 @@ export class NavigationStart extends RouterEvent {
       /** @docsNotRequired */
       navigationTrigger: 'imperative'|'popstate'|'hashchange' = 'imperative',
       /** @docsNotRequired */
-      restoredState: {navigationId: number}|null = null) {
+      restoredState: {[k: string]: any, navigationId: number}|null = null) {
     super(id, url);
     this.navigationTrigger = navigationTrigger;
     this.restoredState = restoredState;
@@ -100,11 +100,9 @@ export class NavigationStart extends RouterEvent {
 }
 
 /**
- * @description
+ * An event triggered when a navigation ends successfully.
  *
- * Represents an event triggered when a navigation ends successfully.
- *
- *
+ * @publicApi
  */
 export class NavigationEnd extends RouterEvent {
   constructor(
@@ -124,11 +122,12 @@ export class NavigationEnd extends RouterEvent {
 }
 
 /**
- * @description
+ * An event triggered when a navigation is canceled, directly or indirectly.
  *
- * Represents an event triggered when a navigation is canceled.
+ * This can happen when a [route guard](guide/router#milestone-5-route-guards)
+ * returns `false` or initiates a redirect by returning a `UrlTree`.
  *
- *
+ * @publicApi
  */
 export class NavigationCancel extends RouterEvent {
   constructor(
@@ -146,11 +145,9 @@ export class NavigationCancel extends RouterEvent {
 }
 
 /**
- * @description
+ * An event triggered when a navigation fails due to an unexpected error.
  *
- * Represents an event triggered when a navigation fails due to an unexpected error.
- *
- *
+ * @publicApi
  */
 export class NavigationError extends RouterEvent {
   constructor(
@@ -170,11 +167,9 @@ export class NavigationError extends RouterEvent {
 }
 
 /**
- * @description
+ *An event triggered when routes are recognized.
  *
- * Represents an event triggered when routes are recognized.
- *
- *
+ * @publicApi
  */
 export class RoutesRecognized extends RouterEvent {
   constructor(
@@ -196,11 +191,9 @@ export class RoutesRecognized extends RouterEvent {
 }
 
 /**
- * @description
+ * An event triggered at the start of the Guard phase of routing.
  *
- * Represents the start of the Guard phase of routing.
- *
- * @experimental
+ * @publicApi
  */
 export class GuardsCheckStart extends RouterEvent {
   constructor(
@@ -221,11 +214,9 @@ export class GuardsCheckStart extends RouterEvent {
 }
 
 /**
- * @description
+ * An event triggered at the end of the Guard phase of routing.
  *
- * Represents the end of the Guard phase of routing.
- *
- * @experimental
+ * @publicApi
  */
 export class GuardsCheckEnd extends RouterEvent {
   constructor(
@@ -248,14 +239,12 @@ export class GuardsCheckEnd extends RouterEvent {
 }
 
 /**
- * @description
+ * An event triggered at the the start of the Resolve phase of routing.
  *
- * Represents the start of the Resolve phase of routing. The timing of this
- * event may change, thus it's experimental. In the current iteration it will run
- * in the "resolve" phase whether there's things to resolve or not. In the future this
- * behavior may change to only run when there are things to be resolved.
+ * Runs in the "resolve" phase whether or not there is anything to resolve.
+ * In future, may change to only run when there are things to be resolved.
  *
- * @experimental
+ * @publicApi
  */
 export class ResolveStart extends RouterEvent {
   constructor(
@@ -276,12 +265,10 @@ export class ResolveStart extends RouterEvent {
 }
 
 /**
- * @description
+ * An event triggered at the end of the Resolve phase of routing.
+ * @see `ResolveStart`.
  *
- * Represents the end of the Resolve phase of routing. See note on
- * `ResolveStart` for use of this experimental API.
- *
- * @experimental
+ * @publicApi
  */
 export class ResolveEnd extends RouterEvent {
   constructor(
@@ -302,11 +289,9 @@ export class ResolveEnd extends RouterEvent {
 }
 
 /**
- * @description
+ * An event triggered before lazy loading a route configuration.
  *
- * Represents an event triggered before lazy loading a route config.
- *
- * @experimental
+ * @publicApi
  */
 export class RouteConfigLoadStart {
   constructor(
@@ -316,11 +301,9 @@ export class RouteConfigLoadStart {
 }
 
 /**
- * @description
+ * An event triggered when a route has been lazy loaded.
  *
- * Represents an event triggered when a route has been lazy loaded.
- *
- * @experimental
+ * @publicApi
  */
 export class RouteConfigLoadEnd {
   constructor(
@@ -330,12 +313,12 @@ export class RouteConfigLoadEnd {
 }
 
 /**
- * @description
+ * An event triggered at the start of the child-activation
+ * part of the Resolve phase of routing.
+ * @see  `ChildActivationEnd`
+ * @see `ResolveStart`
  *
- * Represents the start of end of the Resolve phase of routing. See note on
- * `ChildActivationEnd` for use of this experimental API.
- *
- * @experimental
+ * @publicApi
  */
 export class ChildActivationStart {
   constructor(
@@ -348,12 +331,11 @@ export class ChildActivationStart {
 }
 
 /**
- * @description
- *
- * Represents the start of end of the Resolve phase of routing. See note on
- * `ChildActivationStart` for use of this experimental API.
- *
- * @experimental
+ * An event triggered at the end of the child-activation part
+ * of the Resolve phase of routing.
+ * @see `ChildActivationStart`
+ * @see `ResolveStart` *
+ * @publicApi
  */
 export class ChildActivationEnd {
   constructor(
@@ -366,12 +348,12 @@ export class ChildActivationEnd {
 }
 
 /**
- * @description
+ * An event triggered at the start of the activation part
+ * of the Resolve phase of routing.
+ * @see ActivationEnd`
+ * @see `ResolveStart`
  *
- * Represents the start of end of the Resolve phase of routing. See note on
- * `ActivationEnd` for use of this experimental API.
- *
- * @experimental
+ * @publicApi
  */
 export class ActivationStart {
   constructor(
@@ -384,12 +366,12 @@ export class ActivationStart {
 }
 
 /**
- * @description
+ * An event triggered at the end of the activation part
+ * of the Resolve phase of routing.
+ * @see `ActivationStart`
+ * @see `ResolveStart`
  *
- * Represents the start of end of the Resolve phase of routing. See note on
- * `ActivationStart` for use of this experimental API.
- *
- * @experimental
+ * @publicApi
  */
 export class ActivationEnd {
   constructor(
@@ -402,9 +384,9 @@ export class ActivationEnd {
 }
 
 /**
- * @description
+ * An event triggered by scrolling.
  *
- * Represents a scrolling event.
+ * @publicApi
  */
 export class Scroll {
   constructor(
@@ -424,11 +406,9 @@ export class Scroll {
 }
 
 /**
- * @description
+ * Router events that allow you to track the lifecycle of the router.
  *
- * Represents a router event, allowing you to track the lifecycle of the router.
- *
- * The sequence of router events is:
+ * The sequence of router events is as follows:
  *
  * - `NavigationStart`,
  * - `RouteConfigLoadStart`,
@@ -447,7 +427,7 @@ export class Scroll {
  * - `NavigationError`
  * - `Scroll`
  *
- *
+ * @publicApi
  */
 export type Event = RouterEvent | RouteConfigLoadStart | RouteConfigLoadEnd | ChildActivationStart |
     ChildActivationEnd | ActivationStart | ActivationEnd | Scroll;

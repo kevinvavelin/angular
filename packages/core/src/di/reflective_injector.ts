@@ -6,12 +6,14 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Injector, THROW_IF_NOT_FOUND} from './injector';
+import {Injector} from './injector';
+import {THROW_IF_NOT_FOUND} from './injector_compatibility';
+import {Provider} from './interface/provider';
 import {Self, SkipSelf} from './metadata';
-import {Provider} from './provider';
 import {cyclicDependencyError, instantiationError, noProviderError, outOfBoundsError} from './reflective_errors';
 import {ReflectiveKey} from './reflective_key';
 import {ReflectiveDependency, ResolvedReflectiveFactory, ResolvedReflectiveProvider, resolveReflectiveProviders} from './reflective_provider';
+
 
 // Threshold for the dynamic version
 const UNDEFINED = new Object();
@@ -51,6 +53,7 @@ const UNDEFINED = new Object();
  * resolve all of the object's dependencies automatically.
  *
  * @deprecated from v5 - slow and brings in a lot of code, Use `Injector.create` instead.
+ * @publicApi
  */
 export abstract class ReflectiveInjector implements Injector {
   /**
@@ -140,7 +143,6 @@ export abstract class ReflectiveInjector implements Injector {
    * var injector = ReflectiveInjector.fromResolvedProviders(providers);
    * expect(injector.get(Car) instanceof Car).toBe(true);
    * ```
-   * @experimental
    */
   static fromResolvedProviders(providers: ResolvedReflectiveProvider[], parent?: Injector):
       ReflectiveInjector {
@@ -153,15 +155,6 @@ export abstract class ReflectiveInjector implements Injector {
    *
    * <!-- TODO: Add a link to the section of the user guide talking about hierarchical injection.
    * -->
-   *
-   * @usageNotes
-   * ### Example
-   *
-   * ```typescript
-   * var parent = ReflectiveInjector.resolveAndCreate([]);
-   * var child = parent.resolveAndCreateChild([]);
-   * expect(child.parent).toBe(parent);
-   * ```
    */
   abstract get parent(): Injector|null;
 
@@ -295,8 +288,8 @@ export class ReflectiveInjector_ implements ReflectiveInjector {
 
     const len = _providers.length;
 
-    this.keyIds = new Array(len);
-    this.objs = new Array(len);
+    this.keyIds = [];
+    this.objs = [];
 
     for (let i = 0; i < len; i++) {
       this.keyIds[i] = _providers[i].key.id;
@@ -346,7 +339,7 @@ export class ReflectiveInjector_ implements ReflectiveInjector {
 
   private _instantiateProvider(provider: ResolvedReflectiveProvider): any {
     if (provider.multiProvider) {
-      const res = new Array(provider.resolvedFactories.length);
+      const res = [];
       for (let i = 0; i < provider.resolvedFactories.length; ++i) {
         res[i] = this._instantiate(provider, provider.resolvedFactories[i]);
       }
@@ -462,7 +455,7 @@ export class ReflectiveInjector_ implements ReflectiveInjector {
 }
 
 function _mapProviders(injector: ReflectiveInjector_, fn: Function): any[] {
-  const res: any[] = new Array(injector._providers.length);
+  const res: any[] = [];
   for (let i = 0; i < injector._providers.length; ++i) {
     res[i] = fn(injector.getProviderAtIndex(i));
   }

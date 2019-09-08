@@ -11,21 +11,18 @@ import {Component, ContentChildren, Directive, Input, QueryList} from '@angular/
 
 @Directive({selector: 'pane'})
 export class Pane {
-  // TODO(issue/24571): remove '!'.
   @Input() id !: string;
 }
 
 @Component({
   selector: 'tab',
   template: `
-    <div class="top-level">Top level panes: {{serializedPanes}}</div> 
+    <div class="top-level">Top level panes: {{serializedPanes}}</div>
     <div class="nested">Arbitrary nested panes: {{serializedNestedPanes}}</div>
   `
 })
 export class Tab {
-  // TODO(issue/24571): remove '!'.
   @ContentChildren(Pane) topLevelPanes !: QueryList<Pane>;
-  // TODO(issue/24571): remove '!'.
   @ContentChildren(Pane, {descendants: true}) arbitraryNestedPanes !: QueryList<Pane>;
 
   get serializedPanes(): string {
@@ -49,7 +46,7 @@ export class Tab {
         </tab>
       </pane>
     </tab>
-    
+
     <button (click)="show()">Show 3</button>
   `,
 })

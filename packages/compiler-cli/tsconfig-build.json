@@ -6,13 +6,18 @@
     "stripInternal": false,
     "target": "es2015",
     "lib": [
-      "es2015"
+      "es2015",
+      "es2017.object",
     ],
     "baseUrl": ".",
     "rootDir": ".",
     "paths": {
       "@angular/compiler": ["../../dist/packages/compiler"]
     },
+    "strict": true,
+    "types": [
+      "node"
+    ],
     "outDir": "../../dist/packages/compiler-cli"
   },
   "bazelOptions": {

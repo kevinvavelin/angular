@@ -6,93 +6,159 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {NgAnalyzedModules, StaticSymbol} from '@angular/compiler';
-import {DiagnosticTemplateInfo, getTemplateExpressionDiagnostics} from '@angular/compiler-cli/src/language_services';
+import {NgAnalyzedModules} from '@angular/compiler';
+import {getTemplateExpressionDiagnostics} from '@angular/compiler-cli/src/language_services';
+import * as ts from 'typescript';
 
 import {AstResult} from './common';
-import {Declarations, Diagnostic, DiagnosticKind, DiagnosticMessageChain, Diagnostics, Span, TemplateSource} from './types';
+import * as ng from './types';
 import {offsetSpan, spanOf} from './utils';
 
-export interface AstProvider {
-  getTemplateAst(template: TemplateSource, fileName: string): AstResult;
+/**
+ * Return diagnostic information for the parsed AST of the template.
+ * @param ast contains HTML and template AST
+ */
+export function getTemplateDiagnostics(ast: AstResult): ng.Diagnostic[] {
+  const results: ng.Diagnostic[] = [];
+  const {parseErrors, templateAst, htmlAst, template} = ast;
+  if (parseErrors) {
+    results.push(...parseErrors.map(e => {
+      return {
+        kind: ng.DiagnosticKind.Error,
+        span: offsetSpan(spanOf(e.span), template.span.start),
+        message: e.msg,
+      };
+    }));
+  }
+  const expressionDiagnostics = getTemplateExpressionDiagnostics({
+    templateAst: templateAst,
+    htmlAst: htmlAst,
+    offset: template.span.start,
+    query: template.query,
+    members: template.members,
+  });
+  results.push(...expressionDiagnostics);
+  return results;
 }
 
-export function getTemplateDiagnostics(
-    fileName: string, astProvider: AstProvider, templates: TemplateSource[]): Diagnostics {
-  const results: Diagnostics = [];
-  for (const template of templates) {
-    const ast = astProvider.getTemplateAst(template, fileName);
-    if (ast) {
-      if (ast.parseErrors && ast.parseErrors.length) {
-        results.push(...ast.parseErrors.map<Diagnostic>(
-            e => ({
-              kind: DiagnosticKind.Error,
-              span: offsetSpan(spanOf(e.span), template.span.start),
-              message: e.msg
-            })));
-      } else if (ast.templateAst && ast.htmlAst) {
-        const info: DiagnosticTemplateInfo = {
-          templateAst: ast.templateAst,
-          htmlAst: ast.htmlAst,
-          offset: template.span.start,
-          query: template.query,
-          members: template.members
-        };
-        const expressionDiagnostics = getTemplateExpressionDiagnostics(info);
-        results.push(...expressionDiagnostics);
-      }
-      if (ast.errors) {
-        results.push(...ast.errors.map<Diagnostic>(
-            e => ({kind: e.kind, span: e.span || template.span, message: e.message})));
-      }
-    }
-  }
-  return results;
+/**
+ * Generate an error message that indicates a directive is not part of any
+ * NgModule.
+ * @param name class name
+ * @param isComponent true if directive is an Angular Component
+ */
+function missingDirective(name: string, isComponent: boolean) {
+  const type = isComponent ? 'Component' : 'Directive';
+  return `${type} '${name}' is not included in a module and will not be ` +
+      'available inside a template. Consider adding it to a NgModule declaration.';
 }
 
 export function getDeclarationDiagnostics(
-    declarations: Declarations, modules: NgAnalyzedModules): Diagnostics {
-  const results: Diagnostics = [];
-
-  let directives: Set<StaticSymbol>|undefined = undefined;
-  for (const declaration of declarations) {
-    const report = (message: string | DiagnosticMessageChain, span?: Span) => {
-      results.push(<Diagnostic>{
-        kind: DiagnosticKind.Error,
-        span: span || declaration.declarationSpan, message
-      });
-    };
-    for (const error of declaration.errors) {
-      report(error.message, error.span);
+    declarations: ng.Declaration[], modules: NgAnalyzedModules): ng.Diagnostic[] {
+  const directives = new Set<ng.StaticSymbol>();
+  for (const ngModule of modules.ngModules) {
+    for (const directive of ngModule.declaredDirectives) {
+      directives.add(directive.reference);
     }
-    if (declaration.metadata) {
-      if (declaration.metadata.isComponent) {
-        if (!modules.ngModuleByPipeOrDirective.has(declaration.type)) {
-          report(
-              `Component '${declaration.type.name}' is not included in a module and will not be available inside a template. Consider adding it to a NgModule declaration`);
-        }
-        const {template, templateUrl} = declaration.metadata.template !;
-        if (template === null && !templateUrl) {
-          report(`Component '${declaration.type.name}' must have a template or templateUrl`);
-        } else if (template && templateUrl) {
-          report(
-              `Component '${declaration.type.name}' must not have both template and templateUrl`);
-        }
-      } else {
-        if (!directives) {
-          directives = new Set();
-          modules.ngModules.forEach(module => {
-            module.declaredDirectives.forEach(
-                directive => { directives !.add(directive.reference); });
-          });
-        }
-        if (!directives.has(declaration.type)) {
-          report(
-              `Directive '${declaration.type.name}' is not included in a module and will not be available inside a template. Consider adding it to a NgModule declaration`);
-        }
+  }
+
+  const results: ng.Diagnostic[] = [];
+
+  for (const declaration of declarations) {
+    const {errors, metadata, type, declarationSpan} = declaration;
+    for (const error of errors) {
+      results.push({
+        kind: ng.DiagnosticKind.Error,
+        message: error.message,
+        span: error.span,
+      });
+    }
+    if (!metadata) {
+      continue;  // declaration is not an Angular directive
+    }
+    if (metadata.isComponent) {
+      if (!modules.ngModuleByPipeOrDirective.has(declaration.type)) {
+        results.push({
+          kind: ng.DiagnosticKind.Error,
+          message: missingDirective(type.name, metadata.isComponent),
+          span: declarationSpan,
+        });
       }
+      const {template, templateUrl} = metadata.template !;
+      if (template === null && !templateUrl) {
+        results.push({
+          kind: ng.DiagnosticKind.Error,
+          message: `Component '${type.name}' must have a template or templateUrl`,
+          span: declarationSpan,
+        });
+      } else if (template && templateUrl) {
+        results.push({
+          kind: ng.DiagnosticKind.Error,
+          message: `Component '${type.name}' must not have both template and templateUrl`,
+          span: declarationSpan,
+        });
+      }
+    } else if (!directives.has(declaration.type)) {
+      results.push({
+        kind: ng.DiagnosticKind.Error,
+        message: missingDirective(type.name, metadata.isComponent),
+        span: declarationSpan,
+      });
     }
   }
 
   return results;
+}
+
+/**
+ * Return a recursive data structure that chains diagnostic messages.
+ * @param chain
+ */
+function chainDiagnostics(chain: ng.DiagnosticMessageChain): ts.DiagnosticMessageChain {
+  return {
+    messageText: chain.message,
+    category: ts.DiagnosticCategory.Error,
+    code: 0,
+    next: chain.next ? chainDiagnostics(chain.next) : undefined
+  };
+}
+
+/**
+ * Convert ng.Diagnostic to ts.Diagnostic.
+ * @param d diagnostic
+ * @param file
+ */
+export function ngDiagnosticToTsDiagnostic(
+    d: ng.Diagnostic, file: ts.SourceFile | undefined): ts.Diagnostic {
+  return {
+    file,
+    start: d.span.start,
+    length: d.span.end - d.span.start,
+    messageText: typeof d.message === 'string' ? d.message : chainDiagnostics(d.message),
+    category: ts.DiagnosticCategory.Error,
+    code: 0,
+    source: 'ng',
+  };
+}
+
+/**
+ * Return elements filtered by unique span.
+ * @param elements
+ */
+export function uniqueBySpan<T extends{span: ng.Span}>(elements: T[]): T[] {
+  const result: T[] = [];
+  const map = new Map<number, Set<number>>();
+  for (const element of elements) {
+    const {span} = element;
+    let set = map.get(span.start);
+    if (!set) {
+      set = new Set();
+      map.set(span.start, set);
+    }
+    if (!set.has(span.end)) {
+      set.add(span.end);
+      result.push(element);
+    }
+  }
+  return result;
 }

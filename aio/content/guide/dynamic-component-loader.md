@@ -35,9 +35,7 @@ The ad banner uses a helper directive called `AdDirective` to
 mark valid insertion points in the template.
 
 
-<code-example path="dynamic-component-loader/src/app/ad.directive.ts" title="src/app/ad.directive.ts" linenums="false">
-
-</code-example>
+<code-example path="dynamic-component-loader/src/app/ad.directive.ts" header="src/app/ad.directive.ts"></code-example>
 
 
 
@@ -62,9 +60,7 @@ To apply the `AdDirective`, recall the selector from `ad.directive.ts`,
 where to dynamically load components.
 
 
-<code-example path="dynamic-component-loader/src/app/ad-banner.component.ts" region="ad-host" title="src/app/ad-banner.component.ts (template)" linenums="false">
-
-</code-example>
+<code-example path="dynamic-component-loader/src/app/ad-banner.component.ts" region="ad-host" header="src/app/ad-banner.component.ts (template)"></code-example>
 
 
 
@@ -91,9 +87,7 @@ With its `getAds()` method, `AdBannerComponent` cycles through the array of `AdI
 and loads a new component every 3 seconds by calling `loadComponent()`.
 
 
-<code-example path="dynamic-component-loader/src/app/ad-banner.component.ts" region="class" title="src/app/ad-banner.component.ts (excerpt)" linenums="false">
-
-</code-example>
+<code-example path="dynamic-component-loader/src/app/ad-banner.component.ts" region="class" header="src/app/ad-banner.component.ts (excerpt)"></code-example>
 
 
 
@@ -150,9 +144,7 @@ dynamically loaded components since they load at runtime.
 To ensure that the compiler still generates a factory,
 add dynamically loaded components to the `NgModule`'s `entryComponents` array:
 
-<code-example path="dynamic-component-loader/src/app/app.module.ts" region="entry-components" title="src/app/app.module.ts (entry components)" linenums="false">
-
-</code-example>
+<code-example path="dynamic-component-loader/src/app/app.module.ts" region="entry-components" header="src/app/app.module.ts (entry components)"></code-example>
 
 
 
@@ -169,15 +161,15 @@ Here are two sample components and the `AdComponent` interface for reference:
 
 <code-tabs>
 
-  <code-pane title="hero-job-ad.component.ts" path="dynamic-component-loader/src/app/hero-job-ad.component.ts">
+  <code-pane header="hero-job-ad.component.ts" path="dynamic-component-loader/src/app/hero-job-ad.component.ts">
 
   </code-pane>
 
-  <code-pane title="hero-profile.component.ts" path="dynamic-component-loader/src/app/hero-profile.component.ts">
+  <code-pane header="hero-profile.component.ts" path="dynamic-component-loader/src/app/hero-profile.component.ts">
 
   </code-pane>
 
-  <code-pane title="ad.component.ts" path="dynamic-component-loader/src/app/ad.component.ts">
+  <code-pane header="ad.component.ts" path="dynamic-component-loader/src/app/ad.component.ts">
 
   </code-pane>
 
@@ -192,7 +184,7 @@ Here are two sample components and the `AdComponent` interface for reference:
  The final ad banner looks like this:
 
 <figure>
-  <img src="generated/images/guide/dynamic-component-loader/ads.gif" alt="Ads">
+  <img src="generated/images/guide/dynamic-component-loader/ads-example.gif" alt="Ads">
 </figure>
 
 

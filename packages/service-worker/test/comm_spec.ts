@@ -8,13 +8,11 @@
 
 import {PLATFORM_ID} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
-
-import {NgswCommChannel} from '../src/low_level';
-import {RegistrationOptions, ngswCommChannelFactory} from '../src/module';
-import {SwPush} from '../src/push';
-import {SwUpdate} from '../src/update';
-import {MockPushManager, MockPushSubscription, MockServiceWorkerContainer, MockServiceWorkerRegistration, patchDecodeBase64} from '../testing/mock';
-import {async_fit, async_it} from './async';
+import {NgswCommChannel} from '@angular/service-worker/src/low_level';
+import {SwRegistrationOptions, ngswCommChannelFactory} from '@angular/service-worker/src/module';
+import {SwPush} from '@angular/service-worker/src/push';
+import {SwUpdate} from '@angular/service-worker/src/update';
+import {MockPushManager, MockPushSubscription, MockServiceWorkerContainer, MockServiceWorkerRegistration, patchDecodeBase64} from '@angular/service-worker/testing/mock';
 
 {
   describe('ServiceWorker library', () => {
@@ -52,10 +50,10 @@ import {async_fit, async_it} from './async';
         TestBed.configureTestingModule({
           providers: [
             {provide: PLATFORM_ID, useValue: 'server'},
-            {provide: RegistrationOptions, useValue: {enabled: true}}, {
+            {provide: SwRegistrationOptions, useValue: {enabled: true}}, {
               provide: NgswCommChannel,
               useFactory: ngswCommChannelFactory,
-              deps: [RegistrationOptions, PLATFORM_ID]
+              deps: [SwRegistrationOptions, PLATFORM_ID]
             }
           ]
         });
@@ -66,10 +64,10 @@ import {async_fit, async_it} from './async';
         TestBed.configureTestingModule({
           providers: [
             {provide: PLATFORM_ID, useValue: 'browser'},
-            {provide: RegistrationOptions, useValue: {enabled: false}}, {
+            {provide: SwRegistrationOptions, useValue: {enabled: false}}, {
               provide: NgswCommChannel,
               useFactory: ngswCommChannelFactory,
-              deps: [RegistrationOptions, PLATFORM_ID]
+              deps: [SwRegistrationOptions, PLATFORM_ID]
             }
           ]
         });
@@ -80,11 +78,11 @@ import {async_fit, async_it} from './async';
         TestBed.configureTestingModule({
           providers: [
             {provide: PLATFORM_ID, useValue: 'browser'},
-            {provide: RegistrationOptions, useValue: {enabled: true}},
+            {provide: SwRegistrationOptions, useValue: {enabled: true}},
             {
               provide: NgswCommChannel,
               useFactory: ngswCommChannelFactory,
-              deps: [RegistrationOptions, PLATFORM_ID],
+              deps: [SwRegistrationOptions, PLATFORM_ID],
             },
           ],
         });
@@ -110,10 +108,10 @@ import {async_fit, async_it} from './async';
            TestBed.configureTestingModule({
              providers: [
                {provide: PLATFORM_ID, useValue: 'browser'},
-               {provide: RegistrationOptions, useValue: {enabled: true}}, {
+               {provide: SwRegistrationOptions, useValue: {enabled: true}}, {
                  provide: NgswCommChannel,
                  useFactory: ngswCommChannelFactory,
-                 deps: [RegistrationOptions, PLATFORM_ID]
+                 deps: [SwRegistrationOptions, PLATFORM_ID]
                }
              ]
            });
@@ -160,7 +158,7 @@ import {async_fit, async_it} from './async';
       });
 
       describe('requestSubscription()', () => {
-        async_it('returns a promise that resolves to the subscription', async() => {
+        it('returns a promise that resolves to the subscription', async() => {
           const promise = push.requestSubscription({serverPublicKey: 'test'});
           expect(promise).toEqual(jasmine.any(Promise));
 
@@ -168,7 +166,7 @@ import {async_fit, async_it} from './async';
           expect(sub).toEqual(jasmine.any(MockPushSubscription));
         });
 
-        async_it('calls `PushManager.subscribe()` (with appropriate options)', async() => {
+        it('calls `PushManager.subscribe()` (with appropriate options)', async() => {
           const decode = (charCodeArr: Uint8Array) =>
               Array.from(charCodeArr).map(c => String.fromCharCode(c)).join('');
 
@@ -190,7 +188,7 @@ import {async_fit, async_it} from './async';
           expect(actualAppServerKeyStr).toBe(appServerKeyStr);
         });
 
-        async_it('emits the new `PushSubscription` on `SwPush.subscription`', async() => {
+        it('emits the new `PushSubscription` on `SwPush.subscription`', async() => {
           const subscriptionSpy = jasmine.createSpy('subscriptionSpy');
           push.subscription.subscribe(subscriptionSpy);
           const sub = await push.requestSubscription({serverPublicKey: 'test'});
@@ -206,7 +204,7 @@ import {async_fit, async_it} from './async';
           psUnsubscribeSpy = spyOn(MockPushSubscription.prototype, 'unsubscribe').and.callThrough();
         });
 
-        async_it('rejects if currently not subscribed to push notifications', async() => {
+        it('rejects if currently not subscribed to push notifications', async() => {
           try {
             await push.unsubscribe();
             throw new Error('`unsubscribe()` should fail');
@@ -215,14 +213,14 @@ import {async_fit, async_it} from './async';
           }
         });
 
-        async_it('calls `PushSubscription.unsubscribe()`', async() => {
+        it('calls `PushSubscription.unsubscribe()`', async() => {
           await push.requestSubscription({serverPublicKey: 'test'});
           await push.unsubscribe();
 
           expect(psUnsubscribeSpy).toHaveBeenCalledTimes(1);
         });
 
-        async_it('rejects if `PushSubscription.unsubscribe()` fails', async() => {
+        it('rejects if `PushSubscription.unsubscribe()` fails', async() => {
           psUnsubscribeSpy.and.callFake(() => { throw new Error('foo'); });
 
           try {
@@ -234,7 +232,7 @@ import {async_fit, async_it} from './async';
           }
         });
 
-        async_it('rejects if `PushSubscription.unsubscribe()` returns false', async() => {
+        it('rejects if `PushSubscription.unsubscribe()` returns false', async() => {
           psUnsubscribeSpy.and.returnValue(Promise.resolve(false));
 
           try {
@@ -246,7 +244,7 @@ import {async_fit, async_it} from './async';
           }
         });
 
-        async_it('emits `null` on `SwPush.subscription`', async() => {
+        it('emits `null` on `SwPush.subscription`', async() => {
           const subscriptionSpy = jasmine.createSpy('subscriptionSpy');
           push.subscription.subscribe(subscriptionSpy);
 
@@ -256,7 +254,7 @@ import {async_fit, async_it} from './async';
           expect(subscriptionSpy).toHaveBeenCalledWith(null);
         });
 
-        async_it('does not emit on `SwPush.subscription` on failure', async() => {
+        it('does not emit on `SwPush.subscription` on failure', async() => {
           const subscriptionSpy = jasmine.createSpy('subscriptionSpy');
           const initialSubEmit = new Promise(resolve => subscriptionSpy.and.callFake(resolve));
 
@@ -290,7 +288,7 @@ import {async_fit, async_it} from './async';
               mock.sendMessage({type, data: {message}});
 
           const receivedMessages: string[] = [];
-          push.messages.subscribe((msg: {message: string}) => receivedMessages.push(msg.message));
+          push.messages.subscribe((msg: any) => receivedMessages.push(msg.message));
 
           sendMessage('PUSH', 'this was a push message');
           sendMessage('NOTPUSH', 'this was not a push message');
@@ -300,6 +298,27 @@ import {async_fit, async_it} from './async';
           expect(receivedMessages).toEqual([
             'this was a push message',
             'this was a push message too',
+          ]);
+        });
+      });
+
+      describe('notificationClicks', () => {
+        it('receives notification clicked messages', () => {
+          const sendMessage = (type: string, action: string) =>
+              mock.sendMessage({type, data: {action}});
+
+          const receivedMessages: string[] = [];
+          push.notificationClicks.subscribe(
+              (msg: {action: string}) => receivedMessages.push(msg.action));
+
+          sendMessage('NOTIFICATION_CLICK', 'this was a click');
+          sendMessage('NOT_IFICATION_CLICK', 'this was not a click');
+          sendMessage('NOTIFICATION_CLICK', 'this was a click too');
+          sendMessage('KCILC_NOITACIFITON', 'this was a KCILC_NOITACIFITON message');
+
+          expect(receivedMessages).toEqual([
+            'this was a click',
+            'this was a click too',
           ]);
         });
       });
@@ -319,7 +338,7 @@ import {async_fit, async_it} from './async';
           push.subscription.subscribe(subscriptionSpy);
         });
 
-        async_it('emits on worker-driven changes (i.e. when the controller changes)', async() => {
+        it('emits on worker-driven changes (i.e. when the controller changes)', async() => {
           // Initial emit for the current `ServiceWorkerController`.
           await nextSubEmitPromise;
           expect(subscriptionSpy).toHaveBeenCalledTimes(1);
@@ -334,7 +353,7 @@ import {async_fit, async_it} from './async';
           expect(subscriptionSpy).toHaveBeenCalledWith(null);
         });
 
-        async_it('emits on subscription changes (i.e. when subscribing/unsubscribing)', async() => {
+        it('emits on subscription changes (i.e. when subscribing/unsubscribing)', async() => {
           await nextSubEmitPromise;
           subscriptionSpy.calls.reset();
 
@@ -367,6 +386,7 @@ import {async_fit, async_it} from './async';
 
         it('does not crash on subscription to observables', () => {
           push.messages.toPromise().catch(err => fail(err));
+          push.notificationClicks.toPromise().catch(err => fail(err));
           push.subscription.toPromise().catch(err => fail(err));
         });
 

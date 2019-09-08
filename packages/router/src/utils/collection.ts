@@ -8,7 +8,7 @@
 
 import {NgModuleFactory, ɵisObservable as isObservable, ɵisPromise as isPromise} from '@angular/core';
 import {Observable, from, of } from 'rxjs';
-import {concatAll, every, last as lastValue, map, mergeAll} from 'rxjs/operators';
+import {concatAll, last as lastValue, map} from 'rxjs/operators';
 
 import {PRIMARY_OUTLET} from '../shared';
 
@@ -21,9 +21,13 @@ export function shallowEqualArrays(a: any[], b: any[]): boolean {
 }
 
 export function shallowEqual(a: {[x: string]: any}, b: {[x: string]: any}): boolean {
-  const k1 = Object.keys(a);
-  const k2 = Object.keys(b);
-  if (k1.length != k2.length) {
+  // Casting Object.keys return values to include `undefined` as there are some cases
+  // in IE 11 where this can happen. Cannot provide a test because the behavior only
+  // exists in certain circumstances in IE 11, therefore doing this cast ensures the
+  // logic is correct for when this edge case is hit.
+  const k1 = Object.keys(a) as string[] | undefined;
+  const k2 = Object.keys(b) as string[] | undefined;
+  if (!k1 || !k2 || k1.length != k2.length) {
     return false;
   }
   let key: string;
@@ -84,20 +88,14 @@ export function waitForMap<A, B>(
     }
   });
 
-  // Closure compiler has problem with using spread operator here. So just using Array.concat.
-  return of .apply(null, waitHead.concat(waitTail)).pipe(concatAll(), lastValue(), map(() => res));
+  // Closure compiler has problem with using spread operator here. So we use "Array.concat".
+  // Note that we also need to cast the new promise because TypeScript cannot infer the type
+  // when calling the "of" function through "Function.apply"
+  return (of .apply(null, waitHead.concat(waitTail)) as Observable<Observable<B>>)
+      .pipe(concatAll(), lastValue(), map(() => res));
 }
 
-/**
- * ANDs Observables by merging all input observables, reducing to an Observable verifying all
- * input Observables return `true`.
- */
-export function andObservables(observables: Observable<Observable<any>>): Observable<boolean> {
-  return observables.pipe(mergeAll(), every((result: any) => result === true));
-}
-
-export function wrapIntoObservable<T>(value: T | NgModuleFactory<T>| Promise<T>| Observable<T>):
-    Observable<T> {
+export function wrapIntoObservable<T>(value: T | Promise<T>| Observable<T>): Observable<T> {
   if (isObservable(value)) {
     return value;
   }
@@ -109,5 +107,5 @@ export function wrapIntoObservable<T>(value: T | NgModuleFactory<T>| Promise<T>|
     return from(Promise.resolve(value));
   }
 
-  return of (value as T);
+  return of (value);
 }

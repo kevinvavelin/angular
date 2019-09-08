@@ -6,15 +6,18 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {APP_BOOTSTRAP_LISTENER, APP_INITIALIZER, Compiler, CompilerFactory, Component, NgModule, NgZone, PlatformRef, TemplateRef, Type, ViewChild, ViewContainerRef} from '@angular/core';
+import {DOCUMENT, ɵgetDOM as getDOM} from '@angular/common';
+import {ResourceLoader} from '@angular/compiler';
+import {APP_BOOTSTRAP_LISTENER, APP_INITIALIZER, Compiler, CompilerFactory, Component, InjectionToken, LOCALE_ID, NgModule, NgZone, PlatformRef, TemplateRef, Type, ViewChild, ViewContainerRef} from '@angular/core';
 import {ApplicationRef} from '@angular/core/src/application_ref';
 import {ErrorHandler} from '@angular/core/src/error_handler';
 import {ComponentRef} from '@angular/core/src/linker/component_factory';
+import {getLocaleId} from '@angular/core/src/render3';
 import {BrowserModule} from '@angular/platform-browser';
-import {getDOM} from '@angular/platform-browser/src/dom/dom_adapter';
-import {DOCUMENT} from '@angular/platform-browser/src/dom/dom_tokens';
-import {dispatchEvent} from '@angular/platform-browser/testing/src/browser_util';
+import {createTemplate, dispatchEvent, getContent} from '@angular/platform-browser/testing/src/browser_util';
 import {expect} from '@angular/platform-browser/testing/src/matchers';
+import {onlyInIvy} from '@angular/private/testing';
+
 import {NoopNgZone} from '../src/zone/ng_zone';
 import {ComponentFixtureNoNgZone, TestBed, async, inject, withModule} from '../testing';
 
@@ -30,16 +33,17 @@ class SomeComponent {
 
     function createRootEl(selector = 'bootstrap-app') {
       const doc = TestBed.get(DOCUMENT);
-      const rootEl = <HTMLElement>getDOM().firstChild(
-          getDOM().content(getDOM().createTemplate(`<${selector}></${selector}>`)));
-      const oldRoots = getDOM().querySelectorAll(doc, selector);
+      const rootEl =
+          <HTMLElement>getContent(createTemplate(`<${selector}></${selector}>`)).firstChild;
+      const oldRoots = doc.querySelectorAll(selector);
       for (let i = 0; i < oldRoots.length; i++) {
         getDOM().remove(oldRoots[i]);
       }
-      getDOM().appendChild(doc.body, rootEl);
+      doc.body.appendChild(rootEl);
     }
 
-    type CreateModuleOptions = {providers?: any[], ngDoBootstrap?: any, bootstrap?: any[]};
+    type CreateModuleOptions =
+        {providers?: any[], ngDoBootstrap?: any, bootstrap?: any[], component?: Type<any>};
 
     function createModule(providers?: any[]): Type<any>;
     function createModule(options: CreateModuleOptions): Type<any>;
@@ -60,8 +64,8 @@ class SomeComponent {
       @NgModule({
         providers: [{provide: ErrorHandler, useValue: errorHandler}, options.providers || []],
         imports: [platformModule],
-        declarations: [SomeComponent],
-        entryComponents: [SomeComponent],
+        declarations: [options.component || SomeComponent],
+        entryComponents: [options.component || SomeComponent],
         bootstrap: options.bootstrap || []
       })
       class MyModule {
@@ -81,8 +85,10 @@ class SomeComponent {
          class SomeComponent {
          }
 
+         const helloToken = new InjectionToken<string>('hello');
+
          @NgModule({
-           providers: [{provide: 'hello', useValue: 'component'}],
+           providers: [{provide: helloToken, useValue: 'component'}],
            declarations: [SomeComponent],
            entryComponents: [SomeComponent],
          })
@@ -97,7 +103,7 @@ class SomeComponent {
          const component = app.bootstrap(cmpFactory);
 
          // The component should see the child module providers
-         expect(component.injector.get('hello')).toEqual('component');
+         expect(component.injector.get(helloToken)).toEqual('component');
        })));
 
     it('should bootstrap a component with a custom selector',
@@ -109,8 +115,10 @@ class SomeComponent {
          class SomeComponent {
          }
 
+         const helloToken = new InjectionToken<string>('hello');
+
          @NgModule({
-           providers: [{provide: 'hello', useValue: 'component'}],
+           providers: [{provide: helloToken, useValue: 'component'}],
            declarations: [SomeComponent],
            entryComponents: [SomeComponent],
          })
@@ -125,7 +133,7 @@ class SomeComponent {
          const component = app.bootstrap(cmpFactory, 'custom-selector');
 
          // The component should see the child module providers
-         expect(component.injector.get('hello')).toEqual('component');
+         expect(component.injector.get(helloToken)).toEqual('component');
        })));
 
     describe('ApplicationRef', () => {
@@ -297,6 +305,58 @@ class SomeComponent {
                  expect(ngZone instanceof NoopNgZone).toBe(true);
                });
          }));
+
+      it('should resolve component resources when creating module factory', async() => {
+        @Component({
+          selector: 'with-templates-app',
+          templateUrl: '/test-template.html',
+        })
+        class WithTemplateUrlComponent {
+        }
+
+        const loadResourceSpy = jasmine.createSpy('load resource').and.returnValue('fakeContent');
+        const testModule = createModule({component: WithTemplateUrlComponent});
+
+        await defaultPlatform.bootstrapModule(testModule, {
+          providers: [
+            {provide: ResourceLoader, useValue: {get: loadResourceSpy}},
+          ]
+        });
+
+        expect(loadResourceSpy).toHaveBeenCalledTimes(1);
+        expect(loadResourceSpy).toHaveBeenCalledWith('/test-template.html');
+      });
+
+      onlyInIvy('We only need to define `LOCALE_ID` for runtime i18n')
+          .it('should define `LOCALE_ID`', async() => {
+            @Component({
+              selector: 'i18n-app',
+              templateUrl: '',
+            })
+            class I18nComponent {
+            }
+
+            const testModule = createModule(
+                {component: I18nComponent, providers: [{provide: LOCALE_ID, useValue: 'ro'}]});
+            await defaultPlatform.bootstrapModule(testModule);
+
+            expect(getLocaleId()).toEqual('ro');
+          });
+
+      it('should wait for APP_INITIALIZER to set providers for `LOCALE_ID`', async() => {
+        let locale: string = '';
+
+        const promise = Promise.resolve().then(() => { locale = 'fr-FR'; });
+
+        const testModule = createModule({
+          providers: [
+            {provide: APP_INITIALIZER, useValue: () => promise, multi: true},
+            {provide: LOCALE_ID, useFactory: () => locale}
+          ]
+        });
+        const app = await defaultPlatform.bootstrapModule(testModule);
+        expect(app.injector.get(LOCALE_ID)).toEqual('fr-FR');
+      });
     });
 
     describe('bootstrapModuleFactory', () => {
@@ -357,14 +417,14 @@ class SomeComponent {
       @Component({template: '<ng-container #vc></ng-container>'})
       class ContainerComp {
         // TODO(issue/24571): remove '!'.
-        @ViewChild('vc', {read: ViewContainerRef})
+        @ViewChild('vc', {read: ViewContainerRef, static: false})
         vc !: ViewContainerRef;
       }
 
       @Component({template: '<ng-template #t>Dynamic content</ng-template>'})
       class EmbeddedViewComp {
         // TODO(issue/24571): remove '!'.
-        @ViewChild(TemplateRef)
+        @ViewChild(TemplateRef, {static: true})
         tplRef !: TemplateRef<Object>;
       }
 
@@ -417,6 +477,7 @@ class SomeComponent {
       it('should detach attached embedded views if they are destroyed', () => {
         const comp = TestBed.createComponent(EmbeddedViewComp);
         const appRef: ApplicationRef = TestBed.get(ApplicationRef);
+
         const embeddedViewRef = comp.componentInstance.tplRef.createEmbeddedView({});
 
         appRef.attachView(embeddedViewRef);
@@ -424,6 +485,7 @@ class SomeComponent {
 
         expect(appRef.viewCount).toBe(0);
       });
+
 
       it('should not allow to attach a view to both, a view container and the ApplicationRef',
          () => {

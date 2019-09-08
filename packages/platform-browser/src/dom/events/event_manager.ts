@@ -6,12 +6,13 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {ɵgetDOM as getDOM} from '@angular/common';
 import {Inject, Injectable, InjectionToken, NgZone} from '@angular/core';
-
-import {getDOM} from '../dom_adapter';
 
 /**
  * The injection token for the event-manager plug-in service.
+ *
+ * @publicApi
  */
 export const EVENT_MANAGER_PLUGINS =
     new InjectionToken<EventManagerPlugin[]>('EventManagerPlugins');
@@ -19,6 +20,8 @@ export const EVENT_MANAGER_PLUGINS =
 /**
  * An injectable service that provides event management for Angular
  * through a browser plug-in.
+ *
+ * @publicApi
  */
 @Injectable()
 export class EventManager {

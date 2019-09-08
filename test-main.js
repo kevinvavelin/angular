@@ -31,6 +31,7 @@ System.config({
     'rxjs': 'node_modules/rxjs',
   },
   packages: {
+    '@angular/core/src/render3': {main: 'index.js', defaultExtension: 'js'},
     '@angular/core/testing': {main: 'index.js', defaultExtension: 'js'},
     '@angular/core': {main: 'index.js', defaultExtension: 'js'},
     '@angular/animations/browser/testing': {main: 'index.js', defaultExtension: 'js'},
@@ -50,6 +51,9 @@ System.config({
     '@angular/router': {main: 'index.js', defaultExtension: 'js'},
     '@angular/http/testing': {main: 'index.js', defaultExtension: 'js'},
     '@angular/http': {main: 'index.js', defaultExtension: 'js'},
+    '@angular/localize/run_time': {main: 'index.js', defaultExtension: 'js'},
+    '@angular/localize': {main: 'index.js', defaultExtension: 'js'},
+    '@angular/upgrade/static/testing': {main: 'index.js', defaultExtension: 'js'},
     '@angular/upgrade/static': {main: 'index.js', defaultExtension: 'js'},
     '@angular/upgrade': {main: 'index.js', defaultExtension: 'js'},
     '@angular/platform-browser/animations/testing': {main: 'index.js', defaultExtension: 'js'},

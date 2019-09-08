@@ -1,6 +1,6 @@
 // VARIABLES
 $hamburgerShownMargin: 0 8px 0 0;
-$hamburgerHiddenMargin: 0 16px 0 -88px;
+$hamburgerHiddenMargin: 0 16px 0 -64px;
 
 // DOCS PAGE / STANDARD: TOPNAV TOOLBAR FIXED
 mat-toolbar.mat-toolbar {
@@ -47,7 +47,9 @@ aio-shell.page-resources mat-toolbar.mat-toolbar {
 
 // DOCS PAGES OVERRIDE: HAMBURGER
 aio-shell.folder-api mat-toolbar.mat-toolbar,
+aio-shell.folder-cli mat-toolbar.mat-toolbar,
 aio-shell.folder-docs mat-toolbar.mat-toolbar,
+aio-shell.folder-getting-started mat-toolbar.mat-toolbar,
 aio-shell.folder-guide mat-toolbar.mat-toolbar,
 aio-shell.folder-tutorial mat-toolbar.mat-toolbar {
   @media (min-width: 992px) {
@@ -147,14 +149,20 @@ aio-top-menu {
 
   a.nav-link {
     margin: 0;
-    padding: 24px 16px;
+    padding: 24px 0px;
     cursor: pointer;
 
-    &:focus {
-      background: rgba($white, 0.15);
-      border-radius: 4px;
-      outline: none;
+    .nav-link-inner {
       padding: 8px 16px;
+    }
+
+    &:focus {
+      outline: none;
+
+      .nav-link-inner {
+        background: rgba($white, 0.15);
+        border-radius: 4px;
+      }
     }
   }
 }
@@ -172,7 +180,7 @@ aio-search-box.search-container {
     color: $darkgray;
     border: none;
     border-radius: 100px;
-    background-color: $offwhite;
+    background-color: $white;
     padding: 5px 16px;
     margin-left: 8px;
     width: 180px;
@@ -182,6 +190,11 @@ aio-search-box.search-container {
 
     &:focus {
       outline: none;
+    }
+
+    @include placeholder {
+      @include font-size(14);
+      color: $mediumgray;
     }
 
     @include bp(big) {

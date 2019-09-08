@@ -6,8 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {ɵgetDOM as getDOM} from '@angular/common';
 import {Injectable} from '@angular/core';
-import {ɵgetDOM as getDOM} from '@angular/platform-browser';
 import {Observable, Observer} from 'rxjs';
 import {ResponseOptions} from '../base_response_options';
 import {ContentType, ReadyState, RequestMethod, ResponseContentType, ResponseType} from '../enums';
@@ -29,6 +29,7 @@ const XSSI_PREFIX = /^\)\]\}',?\n/;
  * the {@link MockConnection} may be interacted with in tests.
  *
  * @deprecated see https://angular.io/guide/http
+ * @publicApi
  */
 export class XHRConnection implements Connection {
   request: Request;
@@ -189,6 +190,7 @@ export class XHRConnection implements Connection {
  * details.
  *
  * @deprecated see https://angular.io/guide/http
+ * @publicApi
  */
 export class CookieXSRFStrategy implements XSRFStrategy {
   constructor(
@@ -209,6 +211,7 @@ export class CookieXSRFStrategy implements XSRFStrategy {
  * overridden if a different backend implementation should be used,
  * such as in a node backend.
  *
+ * @usageNotes
  * ### Example
  *
  * ```
@@ -227,6 +230,7 @@ export class CookieXSRFStrategy implements XSRFStrategy {
  * }
  * ```
  * @deprecated see https://angular.io/guide/http
+ * @publicApi
  */
 @Injectable()
 export class XHRBackend implements ConnectionBackend {

@@ -30,13 +30,15 @@ module.exports = function autoLinkCode(getDocFromAlias) {
     return (ast) => {
       visit(ast, 'element', (node, ancestors) => {
         // Only interested in code elements that are not inside links
-        if (autoLinkCodeImpl.codeElements.some(elementType => is(node, elementType)) &&
+        if (autoLinkCodeImpl.codeElements.some(elementType =>
+            is(node, elementType)) &&
+            (!node.properties.className || node.properties.className.indexOf('no-auto-link') === -1) &&
             ancestors.every(ancestor => !is(ancestor, 'a'))) {
           visit(node, 'text', (node, ancestors) => {
             // Only interested in text nodes that are not inside links
             if (ancestors.every(ancestor => !is(ancestor, 'a'))) {
 
-              const parent = ancestors[ancestors.length-1];
+              const parent = ancestors[ancestors.length - 1];
               const index = parent.children.indexOf(node);
 
               // Can we convert the whole text node into a doc link?
@@ -64,6 +66,7 @@ module.exports = function autoLinkCode(getDocFromAlias) {
       });
     };
   }
+
   function foundValidDoc(docs) {
     return docs.length === 1 &&
            !docs[0].internal &&

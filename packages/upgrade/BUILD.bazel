@@ -1,21 +1,20 @@
-package(default_visibility = ["//visibility:public"])
-
 load("//tools:defaults.bzl", "ng_module", "ng_package")
+
+package(default_visibility = ["//visibility:public"])
 
 ng_module(
     name = "upgrade",
     srcs = glob(
         [
             "*.ts",
-            "src/common/**/*.ts",
-            "src/dynamic/**/*.ts",
+            "src/dynamic/src/*.ts",
         ],
     ),
-    module_name = "@angular/upgrade",
     deps = [
         "//packages/core",
-        "//packages/platform-browser",
         "//packages/platform-browser-dynamic",
+        "//packages/upgrade/src/common",
+        "@npm//zone.js",
     ],
 )
 
@@ -24,15 +23,18 @@ ng_package(
     srcs = [
         "package.json",
         "//packages/upgrade/static:package.json",
+        "//packages/upgrade/static/testing:package.json",
     ],
-    entry_point = "packages/upgrade/index.js",
+    entry_point = ":index.ts",
     tags = [
-        "ivy-jit",
-        "ivy-local",
         "release-with-framework",
     ],
+    # Do not add more to this list.
+    # Dependencies on the full npm_package cause long re-builds.
+    visibility = ["//visibility:private"],
     deps = [
         ":upgrade",
         "//packages/upgrade/static",
+        "//packages/upgrade/static/testing",
     ],
 )

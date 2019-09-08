@@ -1,12 +1,8 @@
 # JavaScript Modules vs. NgModules
 
-#### Prerequisites
-A basic understanding of [JavaScript/ECMAScript modules](https://hacks.mozilla.org/2015/08/es6-in-depth-modules/).
-
-<hr>
-
 JavaScript and Angular use modules to organize code, and
 though they organize it differently, Angular apps rely on both.
+
 
 ## JavaScript modules
 
@@ -24,12 +20,14 @@ import { AppComponent } from './app.component';
 
 JavaScript modules help you namespace, preventing accidental global variables.
 
+For more information on JavaScript modules, see [JavaScript/ECMAScript modules](https://hacks.mozilla.org/2015/08/es6-in-depth-modules/).
+
 ## NgModules
 
 <!-- KW-- perMisko: let's discuss. This does not answer the question why it is different. Also, last sentence is confusing.-->
 NgModules are classes decorated with `@NgModule`. The `@NgModule` decorator’s `imports` array tells Angular what other NgModules the current module needs. The modules in the `imports` array are different than JavaScript modules because they are NgModules rather than regular JavaScript modules. Classes with an `@NgModule` decorator are by convention kept in their own files, but what makes them an `NgModule` isn’t being in their own file, like JavaScript modules; it’s the presence of `@NgModule` and its metadata.
 
-The `AppModule` generated from the Angular CLI demonstrates both kinds of modules in action:
+The `AppModule` generated from the [Angular CLI](cli) demonstrates both kinds of modules in action:
 
 ```typescript
 /* These are JavaScript import statements. Angular doesn’t know anything about these. */

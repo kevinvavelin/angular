@@ -21,7 +21,7 @@ const DESTROY_DELAY = 10;
  * Factory that creates new ComponentNgElementStrategy instance. Gets the component factory with the
  * constructor's injector's factory resolver and passes that factory to each strategy.
  *
- * @experimental
+ * @publicApi
  */
 export class ComponentNgElementStrategyFactory implements NgElementStrategyFactory {
   componentFactory: ComponentFactory<any>;
@@ -40,7 +40,7 @@ export class ComponentNgElementStrategyFactory implements NgElementStrategyFacto
  * Creates and destroys a component ref using a component factory and handles change detection
  * in response to input changes.
  *
- * @experimental
+ * @publicApi
  */
 export class ComponentNgElementStrategy implements NgElementStrategy {
   /** Merged stream of the component's output events. */
@@ -125,12 +125,12 @@ export class ComponentNgElementStrategy implements NgElementStrategy {
    * cached and set when the component is created.
    */
   setInputValue(property: string, value: any): void {
-    if (strictEquals(value, this.getInputValue(property))) {
+    if (!this.componentRef) {
+      this.initialInputValues.set(property, value);
       return;
     }
 
-    if (!this.componentRef) {
-      this.initialInputValues.set(property, value);
+    if (strictEquals(value, this.getInputValue(property))) {
       return;
     }
 
@@ -164,9 +164,8 @@ export class ComponentNgElementStrategy implements NgElementStrategy {
   /** Set any stored initial inputs on the component's properties. */
   protected initializeInputs(): void {
     this.componentFactory.inputs.forEach(({propName}) => {
-      const initialValue = this.initialInputValues.get(propName);
-      if (initialValue) {
-        this.setInputValue(propName, initialValue);
+      if (this.initialInputValues.has(propName)) {
+        this.setInputValue(propName, this.initialInputValues.get(propName));
       } else {
         // Keep track of inputs that were not initialized in case we need to know this for
         // calling ngOnChanges with SimpleChanges

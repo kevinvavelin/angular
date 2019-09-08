@@ -1,9 +1,8 @@
-load("//tools:defaults.bzl", "ts_library")
-load("@build_bazel_rules_nodejs//:defs.bzl", "jasmine_node_test")
+load("//tools:defaults.bzl", "jasmine_node_test", "ts_library")
 
 ts_library(
     name = "test_lib",
-    testonly = 1,
+    testonly = True,
     srcs = glob(
         ["**/*.ts"],
     ),
@@ -11,7 +10,9 @@ ts_library(
         "//packages:types",
         "//packages/compiler",
         "//packages/compiler-cli",
+        "//packages/compiler-cli/src/ngtsc/file_system",
         "//packages/compiler/test:test_utils",
+        "@npm//typescript",
     ],
 )
 
@@ -21,8 +22,8 @@ jasmine_node_test(
     data = [
         "//packages/compiler-cli/test/ngtsc/fake_core:npm_package",
     ],
+    shard_count = 4,
     tags = [
-        "ivy-local",
         "ivy-only",
     ],
     deps = [

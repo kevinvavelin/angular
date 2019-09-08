@@ -6,12 +6,6 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { tap } from 'rxjs/operators';
 
 /**
- * If linenums is not set, this is the default maximum number of lines that
- * an example can display without line numbers.
- */
-const DEFAULT_LINE_NUMS_COUNT = 10;
-
-/**
  * Formatted Code Block
  *
  * Pretty renders a code block, used in the docs and API reference by the code-example and
@@ -85,19 +79,19 @@ export class CodeComponent implements OnChanges {
   /** Region of the source of the code being displayed. */
   @Input() region: string;
 
-  /** Optional title to be displayed above the code. */
+  /** Optional header to be displayed above the code. */
   @Input()
-  set title(title: string) {
-    this._title = title;
-    this.ariaLabel = this.title ? `Copy code snippet from ${this.title}` : '';
+  set header(header: string) {
+    this._header = header;
+    this.ariaLabel = this.header ? `Copy code snippet from ${this.header}` : '';
   }
-  get title(): string { return this._title; }
-  private _title: string;
+  get header(): string { return this._header; }
+  private _header: string;
 
   @Output() codeFormatted = new EventEmitter<void>();
 
   /** The element in the template that will display the formatted code. */
-  @ViewChild('codeContainer') codeContainer: ElementRef;
+  @ViewChild('codeContainer', { static: true }) codeContainer: ElementRef;
 
   constructor(
     private snackbar: MatSnackBar,
@@ -170,9 +164,7 @@ export class CodeComponent implements OnChanges {
       typeof this.linenums === 'string' ? parseInt(this.linenums, 10) :
       this.linenums;
 
-    // if no linenums, enable line numbers if more than one line
-    return linenums == null || isNaN(linenums as number) ?
-        (code.match(/\n/g) || []).length > DEFAULT_LINE_NUMS_COUNT : linenums;
+    return (linenums != null) && !isNaN(linenums as number) && linenums;
   }
 }
 

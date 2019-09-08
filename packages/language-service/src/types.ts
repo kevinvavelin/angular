@@ -6,8 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {CompileDirectiveMetadata, CompileMetadataResolver, CompilePipeSummary, NgAnalyzedModules, StaticSymbol} from '@angular/compiler';
+import {CompileDirectiveMetadata, NgAnalyzedModules, StaticSymbol} from '@angular/compiler';
 import {BuiltinType, DeclarationKind, Definition, PipeInfo, Pipes, Signature, Span, Symbol, SymbolDeclaration, SymbolQuery, SymbolTable} from '@angular/compiler-cli/src/language_services';
+
+import {AstResult} from './common';
 
 export {
   BuiltinType,
@@ -17,6 +19,7 @@ export {
   Pipes,
   Signature,
   Span,
+  StaticSymbol,
   Symbol,
   SymbolDeclaration,
   SymbolQuery,
@@ -27,25 +30,15 @@ export {
  * The information `LanguageService` needs from the `LanguageServiceHost` to describe the content of
  * a template and the language context the template is in.
  *
- * A host interface; see `LanguageSeriviceHost`.
+ * A host interface; see `LanguageServiceHost`.
  *
- * @experimental
+ * @publicApi
  */
 export interface TemplateSource {
   /**
    * The source of the template.
    */
   readonly source: string;
-
-  /**
-   * The version of the source. As files are modified the version should change. That is, if the
-   * `LanguageService` requesting template information for a source file and that file has changed
-   * since the last time the host was asked for the file then this version string should be
-   * different. No assumptions are made about the format of this string.
-   *
-   * The version can change more often than the source but should not change less often.
-   */
-  readonly version: string;
 
   /**
    * The span of the template within the source file.
@@ -66,24 +59,28 @@ export interface TemplateSource {
    * A `SymbolQuery` for the context of the template.
    */
   readonly query: SymbolQuery;
+
+  /**
+   * Name of the file that contains the template. Could be `.html` or `.ts`.
+   */
+  readonly fileName: string;
 }
 
 /**
  * A sequence of template sources.
  *
- * A host type; see `LanguageSeriviceHost`.
+ * A host type; see `LanguageServiceHost`.
  *
- * @experimental
+ * @publicApi
  */
 export type TemplateSources = TemplateSource[] | undefined;
-
 
 /**
  * Error information found getting declaration information
  *
  * A host type; see `LanguageServiceHost`.
  *
- * @experimental
+ * @publicApi
  */
 export interface DeclarationError {
   /**
@@ -102,14 +99,14 @@ export interface DeclarationError {
  * Information about the component declarations.
  *
  * A file might contain a declaration without a template because the file contains only
- * templateUrl references. However, the compoennt declaration might contain errors that
+ * templateUrl references. However, the component declaration might contain errors that
  * need to be reported such as the template string is missing or the component is not
  * declared in a module. These error should be reported on the declaration, not the
  * template.
  *
- * A host type; see `LanguageSeriviceHost`.
+ * A host type; see `LanguageServiceHost`.
  *
- * @experimental
+ * @publicApi
  */
 export interface Declaration {
   /**
@@ -137,16 +134,15 @@ export interface Declaration {
 /**
  * A sequence of declarations.
  *
- * A host type; see `LanguageSeriviceHost`.
+ * A host type; see `LanguageServiceHost`.
  *
- * @experimental
+ * @publicApi
  */
 export type Declarations = Declaration[];
 
 /**
  * The host for a `LanguageService`. This provides all the `LanguageService` requires to respond
- * to
- * the `LanguageService` requests.
+ * to the `LanguageService` requests.
  *
  * This interface describes the requirements of the `LanguageService` on its host.
  *
@@ -169,27 +165,14 @@ export type Declarations = Declaration[];
  * releases. After an interface is marked as stable breaking-changes will only be allowed between
  * major releases. No breaking changes are allowed between patch releases.
  *
- * @experimental
+ * @publicApi
  */
 export interface LanguageServiceHost {
   /**
-   * The resolver to use to find compiler metadata.
-   */
-  readonly resolver: CompileMetadataResolver;
-
-  /**
-   * Returns the template information for templates in `fileName` at the given location. If
-   * `fileName` refers to a template file then the `position` should be ignored. If the `position`
-   * is not in a template literal string then this method should return `undefined`.
-   */
-  getTemplateAt(fileName: string, position: number): TemplateSource|undefined;
-
-  /**
    * Return the template source information for all templates in `fileName` or for `fileName` if
-   * it
-   * is a template file.
+   * it is a template file.
    */
-  getTemplates(fileName: string): TemplateSources;
+  getTemplates(fileName: string): TemplateSource[];
 
   /**
    * Returns the Angular declarations in the given file.
@@ -205,6 +188,16 @@ export interface LanguageServiceHost {
    * Return a list all the template files referenced by the project.
    */
   getTemplateReferences(): string[];
+
+  /**
+   * Return the AST for both HTML and template for the contextFile.
+   */
+  getTemplateAst(template: TemplateSource): AstResult|Diagnostic;
+
+  /**
+   * Return the template AST for the node that corresponds to the position.
+   */
+  getTemplateAstAtPosition(fileName: string, position: number): AstResult|undefined;
 }
 
 /**
@@ -212,11 +205,11 @@ export interface LanguageServiceHost {
  *
  * A `LanguageService` interface.
  *
- * @experimental
+ * @publicApi
  */
 export interface Completion {
   /**
-   * The kind of comletion.
+   * The kind of completion.
    */
   kind: DeclarationKind;
 
@@ -234,9 +227,9 @@ export interface Completion {
 /**
  * A sequence of completions.
  *
- * @experimental
+ * @deprecated
  */
-export type Completions = Completion[] | undefined;
+export type Completions = Completion[];
 
 /**
  * A file and span.
@@ -249,11 +242,38 @@ export interface Location {
 /**
  * The kind of diagnostic message.
  *
- * @experimental
+ * @publicApi
  */
 export enum DiagnosticKind {
   Error,
   Warning,
+}
+
+/**
+ * The type of Angular directive. Used for QuickInfo in template.
+ */
+export enum DirectiveKind {
+  COMPONENT = 'component',
+  DIRECTIVE = 'directive',
+  EVENT = 'event',
+}
+
+/**
+ * ScriptElementKind for completion.
+ */
+export enum CompletionKind {
+  ATTRIBUTE = 'attribute',
+  COMPONENT = 'component',
+  ELEMENT = 'element',
+  ENTITY = 'entity',
+  HTML_ATTRIBUTE = 'html attribute',
+  KEY = 'key',
+  METHOD = 'method',
+  PIPE = 'pipe',
+  PROPERTY = 'property',
+  REFERENCE = 'reference',
+  TYPE = 'type',
+  VARIABLE = 'variable',
 }
 
 /**
@@ -264,7 +284,7 @@ export enum DiagnosticKind {
  * For compatibility previous implementation, the values are expected to override
  * toString() to return a formatted message.
  *
- * @experimental
+ * @publicApi
  */
 export interface DiagnosticMessageChain {
   /**
@@ -281,7 +301,7 @@ export interface DiagnosticMessageChain {
 /**
  * An template diagnostic message to display.
  *
- * @experimental
+ * @publicApi
  */
 export interface Diagnostic {
   /**
@@ -303,7 +323,7 @@ export interface Diagnostic {
 /**
  * A sequence of diagnostic message.
  *
- * @experimental
+ * @deprecated
  */
 export type Diagnostics = Diagnostic[];
 
@@ -353,7 +373,7 @@ export interface Hover {
  * beginning of the file reference by `fileName`.
  *
  * This interface and all interfaces and types marked as `LanguageService` types, describe  a
- * particlar implementation of the Angular language service and is not intented to be
+ * particular implementation of the Angular language service and is not intended to be
  * implemented. Adding members to the interface will not be considered a breaking change as
  * defined by SemVer.
  *
@@ -364,36 +384,31 @@ export interface Hover {
  * releases. After an interface is marked as stable breaking-changes will only be allowed between
  * major releases. No breaking changes are allowed between patch releases.
  *
- * @experimental
+ * @publicApi
  */
 export interface LanguageService {
   /**
    * Returns a list of all the external templates referenced by the project.
    */
-  getTemplateReferences(): string[]|undefined;
+  getTemplateReferences(): string[];
 
   /**
    * Returns a list of all error for all templates in the given file.
    */
-  getDiagnostics(fileName: string): Diagnostics|undefined;
+  getDiagnostics(fileName: string): ts.Diagnostic[];
 
   /**
    * Return the completions at the given position.
    */
-  getCompletionsAt(fileName: string, position: number): Completions|undefined;
+  getCompletionsAt(fileName: string, position: number): ts.CompletionInfo|undefined;
 
   /**
    * Return the definition location for the symbol at position.
    */
-  getDefinitionAt(fileName: string, position: number): Definition|undefined;
+  getDefinitionAt(fileName: string, position: number): ts.DefinitionInfoAndBoundSpan|undefined;
 
   /**
    * Return the hover information for the symbol at position.
    */
-  getHoverAt(fileName: string, position: number): Hover|undefined;
-
-  /**
-   * Return the pipes that are available at the given position.
-   */
-  getPipesAt(fileName: string, position: number): CompilePipeSummary[];
+  getHoverAt(fileName: string, position: number): ts.QuickInfo|undefined;
 }

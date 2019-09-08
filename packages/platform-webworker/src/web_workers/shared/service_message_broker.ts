@@ -12,7 +12,8 @@ import {Serializer, SerializerTypes} from '../shared/serializer';
 
 
 /**
- * @experimental WebWorker support in Angular is currently experimental.
+ * @publicApi
+ * @deprecated platform-webworker is deprecated in Angular and will be removed in version 10
  */
 @Injectable()
 export class ServiceMessageBrokerFactory {
@@ -39,7 +40,8 @@ export class ServiceMessageBrokerFactory {
  * the UIMessageBroker deserializes its arguments and calls the registered method.
  * If that method returns a promise, the UIMessageBroker returns the result to the worker.
  *
- * @experimental WebWorker support in Angular is currently experimental.
+ * @publicApi
+ * @deprecated platform-webworker is deprecated in Angular and will be removed in version 10
  */
 export class ServiceMessageBroker {
   private _sink: EventEmitter<any>;
@@ -58,7 +60,7 @@ export class ServiceMessageBroker {
     this._methods.set(methodName, (message: ReceivedMessage) => {
       const serializedArgs = message.args;
       const numArgs = signature ? signature.length : 0;
-      const deserializedArgs = new Array(numArgs);
+      const deserializedArgs = [];
       for (let i = 0; i < numArgs; i++) {
         const serializedArg = serializedArgs[i];
         deserializedArgs[i] = this._serializer.deserialize(serializedArg, signature ![i]);
@@ -90,7 +92,8 @@ export class ServiceMessageBroker {
 }
 
 /**
- * @experimental WebWorker support in Angular is currently experimental.
+ * @publicApi
+ * @deprecated platform-webworker is deprecated in Angular and will be removed in version 10
  */
 export interface ReceivedMessage {
   method: string;

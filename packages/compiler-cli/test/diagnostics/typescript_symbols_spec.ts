@@ -6,15 +6,11 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {StaticSymbol} from '@angular/compiler';
-import {CompilerHost} from '@angular/compiler-cli';
-import {EmittingCompilerHost, MockAotCompilerHost, MockCompilerHost, MockData, MockDirectory, MockMetadataBundlerHost, arrayToMockDir, arrayToMockMap, isSource, settings, setup, toMockFileArray} from '@angular/compiler/test/aot/test_util';
 import {ReflectorHost} from '@angular/language-service/src/reflector_host';
 import * as ts from 'typescript';
 
-import {Symbol, SymbolQuery, SymbolTable} from '../../src/diagnostics/symbols';
+import {BuiltinType, Symbol, SymbolQuery, SymbolTable} from '../../src/diagnostics/symbols';
 import {getSymbolQuery, toSymbolTableFactory} from '../../src/diagnostics/typescript_symbols';
-import {CompilerOptions} from '../../src/transformers/api';
 import {Directory} from '../mocks';
 
 import {DiagnosticContext, MockLanguageServiceHost} from './mocks';
@@ -42,10 +38,7 @@ describe('symbol query', () => {
     program = service.getProgram() !;
     checker = program.getTypeChecker();
     sourceFile = program.getSourceFile('/quickstart/app/app.component.ts') !;
-    const options: CompilerOptions = Object.create(host.getCompilationSettings());
-    options.genDir = '/dist';
-    options.basePath = '/quickstart';
-    const symbolResolverHost = new ReflectorHost(() => program, host, options);
+    const symbolResolverHost = new ReflectorHost(() => program, host);
     context = new DiagnosticContext(service, program, checker, symbolResolverHost);
     query = getSymbolQuery(program, checker, sourceFile, emptyPipes);
   });
@@ -54,6 +47,29 @@ describe('symbol query', () => {
     const unknownType = context.getStaticSymbol('/unkonwn/file.ts', 'UnknownType');
     const symbol = query.getTypeSymbol(unknownType);
     expect(symbol).toBeUndefined();
+  });
+
+  it('should return correct built-in types', () => {
+    const tests: Array<[BuiltinType, boolean, ts.TypeFlags?]> = [
+      // builtinType, throws, want
+      [BuiltinType.Any, false, ts.TypeFlags.Any],
+      [BuiltinType.Boolean, false, ts.TypeFlags.BooleanLiteral],
+      [BuiltinType.Null, false, ts.TypeFlags.Null],
+      [BuiltinType.Number, false, ts.TypeFlags.NumberLiteral],
+      [BuiltinType.String, false, ts.TypeFlags.StringLiteral],
+      [BuiltinType.Undefined, false, ts.TypeFlags.Undefined],
+      [BuiltinType.Unbound, true],
+      [BuiltinType.Other, true],
+    ];
+    for (const [builtinType, throws, want] of tests) {
+      if (throws) {
+        expect(() => query.getBuiltinType(builtinType)).toThrow();
+      } else {
+        const symbol = query.getBuiltinType(builtinType);
+        const got: ts.TypeFlags = (symbol as any).tsType.flags;
+        expect(got).toBe(want !);
+      }
+    }
   });
 });
 

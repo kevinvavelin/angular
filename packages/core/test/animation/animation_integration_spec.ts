@@ -5,15 +5,16 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
-import {AUTO_STYLE, AnimationEvent, AnimationOptions, AnimationPlayer, NoopAnimationPlayer, animate, animateChild, group, keyframes, query, state, style, transition, trigger, ɵPRE_STYLE as PRE_STYLE} from '@angular/animations';
+import {AUTO_STYLE, AnimationEvent, AnimationOptions, animate, animateChild, group, keyframes, query, state, style, transition, trigger, ɵPRE_STYLE as PRE_STYLE} from '@angular/animations';
 import {AnimationDriver, ɵAnimationEngine, ɵNoopAnimationDriver as NoopAnimationDriver} from '@angular/animations/browser';
 import {MockAnimationDriver, MockAnimationPlayer} from '@angular/animations/browser/testing';
+import {ɵgetDOM as getDOM} from '@angular/common';
 import {ChangeDetectorRef, Component, HostBinding, HostListener, Inject, RendererFactory2, ViewChild} from '@angular/core';
+import {TestBed, fakeAsync, flushMicrotasks} from '@angular/core/testing';
 import {ɵDomRendererFactory2} from '@angular/platform-browser';
 import {ANIMATION_MODULE_TYPE, BrowserAnimationsModule, NoopAnimationsModule} from '@angular/platform-browser/animations';
-import {getDOM} from '@angular/platform-browser/src/dom/dom_adapter';
-
-import {TestBed, fakeAsync, flushMicrotasks} from '../../testing';
+import {hasStyle} from '@angular/platform-browser/testing/src/browser_util';
+import {ivyEnabled, modifiedInIvy} from '@angular/private/testing';
 
 const DEFAULT_NAMESPACE_ID = 'id';
 const DEFAULT_COMPONENT_ID = '1';
@@ -345,7 +346,7 @@ const DEFAULT_COMPONENT_ID = '1';
           ]
         })
         class Cmp {
-          @ViewChild('element')
+          @ViewChild('element', {static: false})
           element: any;
           exp: any = '';
         }
@@ -376,9 +377,8 @@ const DEFAULT_COMPONENT_ID = '1';
       it('should allow a transition to use a function to determine what method to run and expose any parameter values',
          () => {
            const transitionFn =
-               (fromState: string, toState: string, element: any, params: {[key: string]: any}) => {
-                 return params['doMatch'] == true;
-               };
+               (fromState: string, toState: string, element?: any,
+                params?: {[key: string]: any}) => { return params !['doMatch'] == true; };
 
            @Component({
              selector: 'if-cmp',
@@ -852,7 +852,6 @@ const DEFAULT_COMPONENT_ID = '1';
              expect(data.keyframes).toEqual([{offset: 0, opacity: '0'}, {offset: 1, opacity: '1'}]);
            }));
 
-        // nonAnimationRenderer => animationRenderer
         it('should trigger a leave animation when the inner components host binding updates',
            fakeAsync(() => {
              @Component({
@@ -954,7 +953,6 @@ const DEFAULT_COMPONENT_ID = '1';
              expect(fixture.debugElement.nativeElement.children.length).toBe(0);
            }));
 
-        // animationRenderer => animationRenderer
         it('should trigger a leave animation when both the inner and outer components trigger on the same element',
            fakeAsync(() => {
              @Component({
@@ -1435,7 +1433,7 @@ const DEFAULT_COMPONENT_ID = '1';
               ])]
         })
         class Cmp {
-          @ViewChild('green') public element: any;
+          @ViewChild('green', {static: false}) public element: any;
         }
 
         TestBed.configureTestingModule({declarations: [Cmp]});
@@ -1449,8 +1447,7 @@ const DEFAULT_COMPONENT_ID = '1';
         const player = engine.players.pop();
         player.finish();
 
-        expect(getDOM().hasStyle(cmp.element.nativeElement, 'background-color', 'green'))
-            .toBeTruthy();
+        expect(hasStyle(cmp.element.nativeElement, 'background-color', 'green')).toBeTruthy();
       });
 
       it('should retain state styles when the underlying DOM structure changes even if there are no insert/remove animations',
@@ -1592,7 +1589,7 @@ const DEFAULT_COMPONENT_ID = '1';
            engine.flush();
            resetLog();
 
-           const element = getDOM().querySelector(fixture.nativeElement, '.ng-if');
+           const element = fixture.nativeElement.querySelector('.ng-if');
            assertHasParent(element, true);
 
            cmp.exp = false;
@@ -1772,7 +1769,7 @@ const DEFAULT_COMPONENT_ID = '1';
         class Cmp {
           public exp: any;
 
-          @ViewChild('parent') public parentElement: any;
+          @ViewChild('parent', {static: false}) public parentElement: any;
         }
 
         TestBed.configureTestingModule({declarations: [Cmp]});
@@ -1826,9 +1823,9 @@ const DEFAULT_COMPONENT_ID = '1';
              public exp1: any;
              public exp2: any;
 
-             @ViewChild('parent') public parent: any;
+             @ViewChild('parent', {static: false}) public parent: any;
 
-             @ViewChild('child') public child: any;
+             @ViewChild('child', {static: false}) public child: any;
            }
 
            TestBed.configureTestingModule({declarations: [Cmp]});
@@ -1883,11 +1880,11 @@ const DEFAULT_COMPONENT_ID = '1';
              public exp1: any;
              public exp2: any;
 
-             @ViewChild('parent') public parent: any;
+             @ViewChild('parent', {static: false}) public parent: any;
 
-             @ViewChild('child1') public child1Elm: any;
+             @ViewChild('child1', {static: false}) public child1Elm: any;
 
-             @ViewChild('child2') public child2Elm: any;
+             @ViewChild('child2', {static: false}) public child2Elm: any;
            }
 
            TestBed.configureTestingModule({declarations: [Cmp]});
@@ -2042,7 +2039,7 @@ const DEFAULT_COMPONENT_ID = '1';
            player.finish();
 
            flushMicrotasks();
-           expect(getDOM().hasStyle(element, 'color', 'red')).toBeTruthy();
+           expect(hasStyle(element, 'color', 'red')).toBeTruthy();
 
            cmp.exp = '1';
            cmp.color = 'blue';
@@ -2050,7 +2047,7 @@ const DEFAULT_COMPONENT_ID = '1';
            resetLog();
 
            flushMicrotasks();
-           expect(getDOM().hasStyle(element, 'color', 'blue')).toBeTruthy();
+           expect(hasStyle(element, 'color', 'blue')).toBeTruthy();
 
            cmp.exp = '1';
            cmp.color = null;
@@ -2058,7 +2055,7 @@ const DEFAULT_COMPONENT_ID = '1';
            resetLog();
 
            flushMicrotasks();
-           expect(getDOM().hasStyle(element, 'color', 'black')).toBeTruthy();
+           expect(hasStyle(element, 'color', 'black')).toBeTruthy();
          }));
 
       it('should substitute in values if the provided state match is an object with values', () => {
@@ -2160,9 +2157,9 @@ const DEFAULT_COMPONENT_ID = '1';
            p1.finish();
            flushMicrotasks();
 
-           expect(getDOM().hasStyle(element, 'color', 'blue')).toBeTruthy();
-           expect(getDOM().hasStyle(element, 'fontSize', '50px')).toBeTruthy();
-           expect(getDOM().hasStyle(element, 'width', '888px')).toBeTruthy();
+           expect(hasStyle(element, 'color', 'blue')).toBeTruthy();
+           expect(hasStyle(element, 'fontSize', '50px')).toBeTruthy();
+           expect(hasStyle(element, 'width', '888px')).toBeTruthy();
          }));
 
       it('should only evaluate final state param substitutions from the expression and state values and not from the transition options ',
@@ -2226,8 +2223,8 @@ const DEFAULT_COMPONENT_ID = '1';
            p1.finish();
            flushMicrotasks();
 
-           expect(getDOM().hasStyle(element, 'width', '100px')).toBeTruthy();
-           expect(getDOM().hasStyle(element, 'height', '100px')).toBeTruthy();
+           expect(hasStyle(element, 'width', '100px')).toBeTruthy();
+           expect(hasStyle(element, 'height', '100px')).toBeTruthy();
          }));
 
       it('should not flush animations twice when an inner component runs change detection', () => {
@@ -2242,7 +2239,7 @@ const DEFAULT_COMPONENT_ID = '1';
               [transition(':enter', [style({opacity: 0}), animate('1s', style({opacity: 1}))])])]
         })
         class OuterCmp {
-          @ViewChild('inner') public inner: any;
+          @ViewChild('inner', {static: false}) public inner: any;
           public exp: any = null;
 
           update() { this.exp = 'go'; }
@@ -3075,7 +3072,7 @@ const DEFAULT_COMPONENT_ID = '1';
             exp: any = false;
             disableExp = false;
 
-            @ViewChild('elm') public element: any;
+            @ViewChild('elm', {static: true}) public element: any;
           }
 
           TestBed.configureTestingModule({declarations: [Cmp]});
@@ -3086,6 +3083,10 @@ const DEFAULT_COMPONENT_ID = '1';
           function assertHeight(element: any, height: string) {
             expect(element.style['height']).toEqual(height);
           }
+
+          // In Ivy, change detection needs to run before the ViewQuery for cmp.element will
+          // resolve. Keeping this test enabled since we still want to test the animation logic.
+          if (ivyEnabled) fixture.detectChanges();
 
           const cmp = fixture.componentInstance;
           const element = cmp.element.nativeElement;
@@ -3229,7 +3230,7 @@ const DEFAULT_COMPONENT_ID = '1';
             ]
           })
           class Cmp {
-            @ViewChild('parent') public parentElm: any;
+            @ViewChild('parent', {static: false}) public parentElm: any;
             disableExp = false;
             exp = false;
           }
@@ -3320,7 +3321,7 @@ const DEFAULT_COMPONENT_ID = '1';
                 `
              })
              class ParentCmp {
-               @ViewChild('child') public child: ChildCmp|null = null;
+               @ViewChild('child', {static: false}) public child: ChildCmp|null = null;
                disableExp = false;
              }
 
@@ -3436,7 +3437,7 @@ const DEFAULT_COMPONENT_ID = '1';
                 `
              })
              class Cmp {
-               @ViewChild('container') public container: any;
+               @ViewChild('container', {static: false}) public container: any;
 
                disableExp = false;
                exp = '';
@@ -3658,18 +3659,19 @@ const DEFAULT_COMPONENT_ID = '1';
       expect(() => { TestBed.createComponent(Cmp); }).not.toThrowError();
     });
 
-    it('should continue to clean up DOM-related animation artificats even if a compiler-level error is thrown midway',
-       () => {
-         @Component({
-           selector: 'if-cmp',
-           animations: [
-             trigger(
-                 'foo',
-                 [
-                   transition('* => something', []),
-                 ]),
-           ],
-           template: `
+    modifiedInIvy('FW-952 - Error recovery is handled differently in Ivy than VE')
+        .it('should continue to clean up DOM-related animation artifacts even if a compiler-level error is thrown midway',
+            () => {
+              @Component({
+                selector: 'if-cmp',
+                animations: [
+                  trigger(
+                      'foo',
+                      [
+                        transition('* => something', []),
+                      ]),
+                ],
+                template: `
           value = {{ foo[bar] }}
           <div #contents>
             <div *ngIf="exp">1</div>
@@ -3677,32 +3679,32 @@ const DEFAULT_COMPONENT_ID = '1';
             <div *ngIf="exp" [@foo]="'123'">3</div>
           </div>
         `,
-         })
-         class Cmp {
-           exp: any = false;
+              })
+              class Cmp {
+                exp: any = false;
 
-           @ViewChild('contents') public contents: any;
-         }
+                @ViewChild('contents', {static: true}) public contents: any;
+              }
 
-         TestBed.configureTestingModule({declarations: [Cmp]});
+              TestBed.configureTestingModule({declarations: [Cmp]});
 
-         const engine = TestBed.get(ɵAnimationEngine);
-         const fixture = TestBed.createComponent(Cmp);
+              const engine = TestBed.get(ɵAnimationEngine);
+              const fixture = TestBed.createComponent(Cmp);
 
-         const runCD = () => fixture.detectChanges();
-         const cmp = fixture.componentInstance;
+              const runCD = () => fixture.detectChanges();
+              const cmp = fixture.componentInstance;
 
-         cmp.exp = true;
-         expect(runCD).toThrow();
+              cmp.exp = true;
+              expect(runCD).toThrow();
 
-         const contents = cmp.contents.nativeElement;
-         expect(contents.innerText.replace(/\s+/gm, '')).toEqual('123');
+              const contents = cmp.contents.nativeElement;
+              expect(contents.innerText.replace(/\s+/gm, '')).toEqual('123');
 
-         cmp.exp = false;
-         expect(runCD).toThrow();
+              cmp.exp = false;
+              expect(runCD).toThrow();
 
-         expect(contents.innerText.trim()).toEqual('');
-       });
+              expect(contents.innerText.trim()).toEqual('');
+            });
 
     describe('errors for not using the animation module', () => {
       beforeEach(() => {
@@ -3741,7 +3743,7 @@ const DEFAULT_COMPONENT_ID = '1';
 })();
 
 function assertHasParent(element: any, yes: boolean) {
-  const parent = getDOM().parentElement(element);
+  const parent = element.parentNode;
   if (yes) {
     expect(parent).toBeTruthy();
   } else {

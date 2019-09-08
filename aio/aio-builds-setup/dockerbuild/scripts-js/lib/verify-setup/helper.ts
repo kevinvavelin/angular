@@ -1,7 +1,6 @@
 // Imports
 import * as cp from 'child_process';
 import * as fs from 'fs';
-import * as http from 'http';
 import * as path from 'path';
 import * as shell from 'shelljs';
 import {AIO_DOWNLOADS_DIR, HIDDEN_DIR_PREFIX} from '../common/constants';
@@ -11,7 +10,7 @@ import {
   AIO_NGINX_PORT_HTTPS,
   AIO_WWW_USER,
 } from '../common/env-variables';
-import {computeShortSha, createLogger} from '../common/utils';
+import {computeShortSha, Logger} from '../common/utils';
 
 // Interfaces - Types
 export interface CmdResult { success: boolean; err: Error | null; stdout: string; stderr: string; }
@@ -31,7 +30,7 @@ class Helper {
     https: AIO_NGINX_PORT_HTTPS,
   };
 
-  private logger = createLogger('TestHelper');
+  private logger = new Logger('TestHelper');
 
   // Constructor
   constructor() {
@@ -105,18 +104,7 @@ class Helper {
     Object.keys(this.portPerScheme).forEach(scheme => suiteFactory(scheme, this.portPerScheme[scheme]));
   }
 
-  public verifyResponse(status: number | [number, string], regex = /^/): VerifyCmdResultFn {
-    let statusCode: number;
-    let statusText: string;
-
-    if (Array.isArray(status)) {
-      statusCode = status[0];
-      statusText = status[1];
-    } else {
-      statusCode = status;
-      statusText = http.STATUS_CODES[statusCode] || 'UNKNOWN_STATUS_CODE';
-    }
-
+  public verifyResponse(status: number, regex: string | RegExp = /^/): VerifyCmdResultFn {
     return (result: CmdResult) => {
       const [headers, body] = result.stdout.
         split(/(?:\r?\n){2,}/).
@@ -131,7 +119,7 @@ class Helper {
       }
 
       expect(result.success).toBe(true);
-      expect(headers).toContain(`${statusCode} ${statusText}`);
+      expect(headers).toMatch(new RegExp(`HTTP/(?:1\\.1|2) ${status} `));
       expect(body).toMatch(regex);
     };
   }
@@ -180,26 +168,42 @@ class Helper {
   }
 }
 
+interface DefaultCurlOptions {
+  defaultMethod?: CurlOptions['method'];
+  defaultOptions?: CurlOptions['options'];
+  defaultHeaders?: CurlOptions['headers'];
+  defaultData?: CurlOptions['data'];
+  defaultExtraPath?: CurlOptions['extraPath'];
+}
+
 interface CurlOptions {
   method?: string;
   options?: string;
+  headers?: string[];
   data?: any;
   url?: string;
   extraPath?: string;
 }
 
-export function makeCurl(baseUrl: string) {
+export function makeCurl(baseUrl: string, {
+  defaultMethod = 'POST',
+  defaultOptions = '',
+  defaultHeaders = ['Content-Type: application/json'],
+  defaultData = {},
+  defaultExtraPath = '',
+}: DefaultCurlOptions = {}) {
   return function curl({
-    method = 'POST',
-    options = '',
-    data = {},
+    method = defaultMethod,
+    options = defaultOptions,
+    headers = defaultHeaders,
+    data = defaultData,
     url = baseUrl,
-    extraPath = '',
+    extraPath = defaultExtraPath,
   }: CurlOptions) {
     const dataString = data ? JSON.stringify(data) : '';
     const cmd = `curl -iLX ${method} ` +
                 `${options} ` +
-                `--header "Content-Type: application/json" ` +
+                headers.map(header => `--header "${header}" `).join('') +
                 `--data '${dataString}' ` +
                 `${url}${extraPath}`;
     return helper.runCmd(cmd);

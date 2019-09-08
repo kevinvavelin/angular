@@ -47,6 +47,7 @@ describe('DocumentService', () => {
       docService.currentDocument.subscribe();
 
       httpMock.expectOne(CONTENT_URL_PREFIX + 'initial/doc.json');
+      expect().nothing();  // Prevent jasmine from complaining about no expectations.
     });
 
     it('should emit a document each time the location changes', () => {
@@ -113,6 +114,7 @@ describe('DocumentService', () => {
 
       httpMock.expectOne({}).flush(null, {status: 500, statusText: 'Server Error'});
       expect(latestDocument.id).toEqual(FETCHING_ERROR_ID);
+      expect(latestDocument.contents).toContain('We are unable to retrieve the "initial/doc" page at this time.');
       expect(logger.output.error).toEqual([
         [jasmine.any(Error)]
       ]);
@@ -180,12 +182,11 @@ describe('DocumentService', () => {
 
   describe('computeMap', () => {
     it('should map the "empty" location to the correct document request', () => {
-      let latestDocument: DocumentContents;
       const { docService } = getServices();
-
-      docService.currentDocument.subscribe(doc => latestDocument = doc);
+      docService.currentDocument.subscribe();
 
       httpMock.expectOne(CONTENT_URL_PREFIX + 'index.json');
+      expect().nothing();  // Prevent jasmine from complaining about no expectations.
     });
 
     it('should map the "folder" locations to the correct document request', () => {
@@ -193,6 +194,7 @@ describe('DocumentService', () => {
       docService.currentDocument.subscribe();
 
       httpMock.expectOne(CONTENT_URL_PREFIX + 'guide.json');
+      expect().nothing();  // Prevent jasmine from complaining about no expectations.
     });
   });
 });

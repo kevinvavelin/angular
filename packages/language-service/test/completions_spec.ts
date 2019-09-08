@@ -6,23 +6,19 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import 'reflect-metadata';
 import * as ts from 'typescript';
 
 import {createLanguageService} from '../src/language_service';
-import {Completions} from '../src/types';
 import {TypeScriptServiceHost} from '../src/typescript_host';
 
 import {toh} from './test_data';
 import {MockTypescriptHost} from './test_utils';
 
 describe('completions', () => {
-  let documentRegistry = ts.createDocumentRegistry();
   let mockHost = new MockTypescriptHost(['/app/main.ts', '/app/parsing-cases.ts'], toh);
-  let service = ts.createLanguageService(mockHost, documentRegistry);
+  let service = ts.createLanguageService(mockHost);
   let ngHost = new TypeScriptServiceHost(mockHost, service);
   let ngService = createLanguageService(ngHost);
-  ngHost.setSite(ngService);
 
   it('should be able to get entity completions',
      () => { contains('/app/test.ng', 'entity-amp', '&amp;', '&gt;', '&lt;', '&iota;'); });
@@ -86,12 +82,10 @@ describe('completions', () => {
 
     expect(() => {
       let chance = 0.05;
-      let requests = 0;
       function tryCompletionsAt(position: number) {
         try {
           if (Math.random() < chance) {
             ngService.getCompletionsAt(fileName, position);
-            requests++;
           }
         } catch (e) {
           // Emit enough diagnostic information to reproduce the error.
@@ -154,7 +148,7 @@ export class MyComponent {
 
     it('should hot crash with an incomplete class', () => {
       expect(() => {
-        addCode('\nexport class', fileName => { ngHost.updateAnalyzedModules(); });
+        addCode('\nexport class', fileName => { ngHost.getAnalyzedModules(); });
       }).not.toThrow();
     });
 
@@ -183,8 +177,29 @@ export class MyComponent {
         tree: Node;
       }
     `);
-    ngHost.updateAnalyzedModules();
+    ngHost.getAnalyzedModules();
     contains('/app/my.component.ts', 'tree', 'children');
+  });
+
+  it('should work with input and output', () => {
+    addCode(
+        `
+      @Component({
+        selector: 'foo-component',
+        template: \`
+          <div string-model ~{stringMarker}="text"></div>
+          <div number-model ~{numberMarker}="value"></div>
+        \`,
+      })
+      export class FooComponent {
+        text: string;
+        value: number;
+      }
+    `,
+        (fileName) => {
+          contains(fileName, 'stringMarker', '[model]', '(model)');
+          contains(fileName, 'numberMarker', '[inputAlias]', '(outputAlias)');
+        });
   });
 
   function addCode(code: string, cb: (fileName: string, content?: string) => void) {
@@ -192,7 +207,7 @@ export class MyComponent {
     const originalContent = mockHost.getFileContent(fileName);
     const newContent = originalContent + code;
     mockHost.override(fileName, originalContent + code);
-    ngHost.updateAnalyzedModules();
+    ngHost.getAnalyzedModules();
     try {
       cb(fileName, newContent);
     } finally {
@@ -210,24 +225,24 @@ export class MyComponent {
 });
 
 
-function expectEntries(locationMarker: string, completions: Completions, ...names: string[]) {
+function expectEntries(
+    locationMarker: string, completion: ts.CompletionInfo | undefined, ...names: string[]) {
   let entries: {[name: string]: boolean} = {};
-  if (!completions) {
+  if (!completion) {
     throw new Error(
         `Expected result from ${locationMarker} to include ${names.join(', ')} but no result provided`);
   }
-  if (!completions.length) {
+  if (!completion.entries.length) {
     throw new Error(
         `Expected result from ${locationMarker} to include ${names.join(', ')} an empty result provided`);
-  } else {
-    for (let entry of completions) {
-      entries[entry.name] = true;
-    }
-    let missing = names.filter(name => !entries[name]);
-    if (missing.length) {
-      throw new Error(
-          `Expected result from ${locationMarker} to include at least one of the following, ${missing.join(', ')}, in the list of entries ${completions.map(entry => entry.name).join(', ')}`);
-    }
+  }
+  for (const entry of completion.entries) {
+    entries[entry.name] = true;
+  }
+  let missing = names.filter(name => !entries[name]);
+  if (missing.length) {
+    throw new Error(
+        `Expected result from ${locationMarker} to include at least one of the following, ${missing.join(', ')}, in the list of entries ${completion.entries.map(entry => entry.name).join(', ')}`);
   }
 }
 
@@ -256,8 +271,9 @@ function buildUp(originalText: string, cb: (text: string, position: number) => v
     inString[index] = true;
     unused.splice(unusedIndex, 1);
     let text = getText();
-    let position =
-        inString.filter((_, i) => i <= index).map(v => v ? 1 : 0).reduce((p, v) => p + v, 0);
+    let position = inString.filter((_, i) => i <= index)
+                       .map(v => v ? 1 : 0)
+                       .reduce((p: number, v) => p + v, 0);
     cb(text, position);
   }
 }
